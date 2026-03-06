@@ -65,16 +65,94 @@ export function normalizeStation(raw) {
   };
 }
 
+// ===== Blog: Medium RSS Feed =====
+const MEDIUM_USER = '@softcorptr';
+const MEDIUM_FEED_URL = `https://medium.com/feed/${MEDIUM_USER}`;
 const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json';
 
-export async function fetchBlogPosts(mediumUser = '@esarjistasyonlari') {
-  const feedUrl = `https://medium.com/feed/${mediumUser}`;
-  const params = new URLSearchParams({
-    rss_url: feedUrl,
+function extractImageFromContent(html) {
+  if (!html) return null;
+  const match = html.match(/<img[^>]+src=["']([^"']+)["']/);
+  return match ? match[1] : null;
+}
+
+function stripHtmlRaw(html) {
+  if (!html) return '';
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
+}
+
+function parseMediumRssWithDOMParser(xmlText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'application/xml');
+  const items = doc.querySelectorAll('item');
+  const posts = [];
+
+  items.forEach((item) => {
+    const title = item.querySelector('title')?.textContent || '';
+    const link = item.querySelector('link')?.textContent || '';
+    const pubDate = item.querySelector('pubDate')?.textContent || '';
+    const creator = item.getElementsByTagName('dc:creator')[0]?.textContent || '';
+
+    const contentEncoded =
+      item.getElementsByTagName('content:encoded')[0]?.textContent || '';
+    const description =
+      item.querySelector('description')?.textContent || contentEncoded;
+
+    const thumbnail = extractImageFromContent(contentEncoded || description);
+    const excerpt = stripHtmlRaw(description).substring(0, 250);
+
+    const categories = [];
+    item.querySelectorAll('category').forEach((cat) => {
+      categories.push(cat.textContent);
+    });
+
+    posts.push({ title, link, pubDate, author: creator, thumbnail, description: excerpt, categories });
   });
 
-  const response = await fetch(`${RSS2JSON_API}?${params}`);
-  if (!response.ok) throw new Error('Failed to fetch blog posts');
-  const data = await response.json();
-  return data.items || [];
+  return posts;
+}
+
+export async function fetchBlogPosts() {
+  // Strategy 1: rss2json API (handles CORS)
+  try {
+    const params = new URLSearchParams({ rss_url: MEDIUM_FEED_URL });
+    const response = await fetch(`${RSS2JSON_API}?${params}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === 'ok' && data.items && data.items.length > 0) {
+        return data.items.map((item) => ({
+          title: item.title,
+          link: item.link,
+          pubDate: item.pubDate,
+          author: item.author,
+          thumbnail: item.thumbnail || extractImageFromContent(item.content || item.description),
+          description: stripHtmlRaw(item.description || item.content).substring(0, 250),
+          categories: item.categories || [],
+        }));
+      }
+    }
+  } catch { /* fall through */ }
+
+  // Strategy 2: CORS proxy + DOMParser
+  try {
+    const corsProxy = 'https://api.allorigins.win/raw?url=';
+    const response = await fetch(corsProxy + encodeURIComponent(MEDIUM_FEED_URL));
+    if (response.ok) {
+      const xmlText = await response.text();
+      return parseMediumRssWithDOMParser(xmlText);
+    }
+  } catch { /* fall through */ }
+
+  // Strategy 3: Direct fetch (SSR or permissive CORS)
+  try {
+    const response = await fetch(MEDIUM_FEED_URL);
+    if (response.ok) {
+      const xmlText = await response.text();
+      return parseMediumRssWithDOMParser(xmlText);
+    }
+  } catch { /* all strategies failed */ }
+
+  return [];
 }

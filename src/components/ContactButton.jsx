@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const CONTACT_EMAIL = 'info@esarjistasyonlari.com.tr';
+const CONTACT_EMAIL = 'business@esarjistasyonlari.com.tr';
 
 export default function ContactButton() {
   const { t } = useTranslation();
