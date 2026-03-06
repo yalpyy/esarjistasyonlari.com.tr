@@ -1,12 +1,15 @@
-import { useTranslation } from 'react-i18next';
+import AdBanner from './AdBanner';
 
 export default function StickyBanner() {
-  const { t } = useTranslation();
-
   return (
     <div className="sticky-banner">
       <div className="sticky-banner-content">
-        <span>{t('adPlaceholder')} - 320x50</span>
+        <AdBanner
+          slot="STICKY_MOBILE_SLOT"
+          format="auto"
+          responsive={false}
+          style={{ width: 320, height: 50 }}
+        />
       </div>
     </div>
   );
