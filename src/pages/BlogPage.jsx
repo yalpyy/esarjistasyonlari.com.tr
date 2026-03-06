@@ -18,7 +18,7 @@ export default function BlogPage() {
   return (
     <div className="blog-page">
       <header className="blog-header">
-        <h1>{t('blogTitle')}</h1>
+        <h1>Blog</h1>
         <h2>{t('blogSubtitle')}</h2>
       </header>
 
@@ -88,6 +88,10 @@ export default function BlogPage() {
             )}
           </React.Fragment>
         ))}
+      </div>
+
+      <div className="blog-ad-bottom">
+        <AdBanner slot="BLOG_BOTTOM_SLOT" format="auto" className="blog-ad-banner" />
       </div>
     </div>
   );

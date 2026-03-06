@@ -1,5 +1,5 @@
 {
-  "appTitle": "EV Charging Stations",
+  "appTitle": "EV Charging Station",
   "appSubtitle": "Turkey's Fastest Charging Guide",
   "home": "Home",
   "blog": "Blog",
@@ -51,5 +51,8 @@
   "sponsored": "Sponsored",
   "privacyPolicy": "Privacy Policy",
   "aboutUs": "About Us",
-  "allRightsReserved": "All rights reserved."
+  "allRightsReserved": "All rights reserved.",
+  "chooseMapApp": "Choose Map App",
+  "googleMaps": "Google Maps",
+  "appleMaps": "Apple Maps"
 }

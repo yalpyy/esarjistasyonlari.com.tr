@@ -15,7 +15,7 @@ export default function Footer() {
           <Link to="/blog">{t('blog')}</Link>
         </div>
         <p className="footer-copy">
-          &copy; {new Date().getFullYear()} esarjistasyonlari.com.tr — {t('allRightsReserved')}
+          &copy; {new Date().getFullYear()} esarjistasyonu.com.tr — {t('allRightsReserved')}
         </p>
       </div>
     </footer>

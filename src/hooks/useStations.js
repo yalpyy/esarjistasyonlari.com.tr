@@ -15,10 +15,8 @@ export function useStations(userPosition) {
   });
 
   useEffect(() => {
-    if (!userPosition) return;
-
     setLoading(true);
-    fetchStations({ lat: userPosition.lat, lng: userPosition.lng })
+    fetchStations()
       .then((data) => {
         const normalized = data.map(normalizeStation);
         setStations(normalized);
@@ -28,7 +26,7 @@ export function useStations(userPosition) {
         setError(err.message);
         setLoading(false);
       });
-  }, [userPosition]);
+  }, []);
 
   const operators = useMemo(() => {
     const ops = new Set(stations.map((s) => s.operator).filter(Boolean));
