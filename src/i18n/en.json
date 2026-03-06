@@ -38,6 +38,7 @@
   "businessAddress": "Business Address",
   "chargerCount": "Charger Count",
   "adLoading": "Ad Loading...",
+  "adLabel": "Ad",
   "adPlaceholder": "Ad Space",
   "close": "Close",
   "locationPermission": "Location access denied. Showing map centered on Turkey.",

@@ -38,6 +38,7 @@
   "businessAddress": "İşletme Adresi",
   "chargerCount": "Şarj Ünitesi Sayısı",
   "adLoading": "Reklam Yükleniyor...",
+  "adLabel": "Reklam",
   "adPlaceholder": "Reklam Alanı",
   "close": "Kapat",
   "locationPermission": "Konumunuza erişim izni verilmedi. Haritayı Türkiye merkezinde gösteriyoruz.",

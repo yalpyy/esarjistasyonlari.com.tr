@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MapContainerComponent from '../components/MapContainer';
 import Sidebar from '../components/Sidebar';
-import InterstitialAd from '../components/InterstitialAd';
+import FullScreenAd from '../components/FullScreenAd';
 import DirectionsModal from '../components/DirectionsModal';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useStations } from '../hooks/useStations';
@@ -151,7 +151,7 @@ export default function HomePage() {
         onStationClick={handleStationClick}
       />
 
-      {showAd && <InterstitialAd onClose={closeAd} />}
+      {showAd && <FullScreenAd onClose={closeAd} />}
       {directionsStation && (
         <DirectionsModal
           station={directionsStation}

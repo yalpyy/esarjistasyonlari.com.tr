@@ -19,6 +19,8 @@ export async function fetchStations({ maxResults = 500 } = {}) {
     params.set('key', OCM_KEY);
   }
 
+  try {
+    const response = await fetch(`${OCM_API}?${params}`);
     if (!response.ok) {
       const errorData = await response.text();
       console.error('API Error Response:', errorData);
