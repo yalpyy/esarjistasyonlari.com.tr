@@ -20,15 +20,7 @@ export async function fetchStations({ maxResults = 500 } = {}) {
   }
 
   try {
-    // BURASI DÜZELTİLDİ: try bloğu ve fetch komutu eklendi
-    const response = await fetch(`${OCM_API}?${params}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-
+    const response = await fetch(`${OCM_API}?${params}`);
     if (!response.ok) {
       const errorData = await response.text();
       console.error('API Error Response:', errorData);
