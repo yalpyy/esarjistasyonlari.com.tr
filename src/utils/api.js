@@ -3,7 +3,7 @@ const OCM_API = 'https://api.openchargemap.io/v3/poi';
 const OCM_KEY = import.meta.env.VITE_OCM_API_KEY || '';
 
 if (!OCM_KEY) {
-  console.warn('[EV Charging] VITE_OCM_API_KEY is not set. OpenChargeMap requests may fail with 403. Add it to your .env file.');
+  console.warn('[EV Charging] VITE_OCM_API_KEY is not set. OpenChargeMap requests may fail with 403.');
 }
 
 export async function fetchStations({ maxResults = 500 } = {}) {
@@ -19,6 +19,16 @@ export async function fetchStations({ maxResults = 500 } = {}) {
     params.set('key', OCM_KEY);
   }
 
+  try {
+    // BURASI DÜZELTİLDİ: try bloğu ve fetch komutu eklendi
+    const response = await fetch(`${OCM_API}?${params}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
     if (!response.ok) {
       const errorData = await response.text();
       console.error('API Error Response:', errorData);
@@ -28,12 +38,9 @@ export async function fetchStations({ maxResults = 500 } = {}) {
     return await response.json();
   } catch (error) {
     console.error('Fetch stations failed:', error);
-    // Hata durumunda boş dizi dön ki uygulama siyah ekran olmasın
     return [];
   }
 }
-
-// normalizeStation ve diğer blog fonksiyonların aynı kalabilir...
 
 export function normalizeStation(raw) {
   const addr = raw.AddressInfo || {};
@@ -110,6 +117,7 @@ function parseMediumRssWithDOMParser(xmlText) {
       item.querySelector('description')?.textContent || contentEncoded;
 
     const thumbnail = extractImageFromContent(contentEncoded || description);
+    // Açıklama kısmı isteğin üzerine 450 karaktere çıkarıldı
     const excerpt = stripHtmlRaw(description).substring(0, 450);
 
     const categories = [];
@@ -124,7 +132,7 @@ function parseMediumRssWithDOMParser(xmlText) {
 }
 
 export async function fetchBlogPosts() {
-  // Strategy 1: rss2json API (handles CORS)
+  // Strategy 1: rss2json API
   try {
     const params = new URLSearchParams({ rss_url: MEDIUM_FEED_URL });
     const response = await fetch(`${RSS2JSON_API}?${params}`);
@@ -153,15 +161,6 @@ export async function fetchBlogPosts() {
       return parseMediumRssWithDOMParser(xmlText);
     }
   } catch { /* fall through */ }
-
-  // Strategy 3: Direct fetch (SSR or permissive CORS)
-  try {
-    const response = await fetch(MEDIUM_FEED_URL);
-    if (response.ok) {
-      const xmlText = await response.text();
-      return parseMediumRssWithDOMParser(xmlText);
-    }
-  } catch { /* all strategies failed */ }
 
   return [];
 }
