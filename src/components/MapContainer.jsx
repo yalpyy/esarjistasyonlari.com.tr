@@ -15,8 +15,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+// UTF-8 safe SVG → data URI (encodeURIComponent instead of btoa)
+function svgToDataUri(svg) {
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.trim());
+}
+
 const userIcon = new L.Icon({
-  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+  iconUrl: svgToDataUri(`
     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">
       <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="#3b82f6"/>
       <circle cx="15" cy="14" r="7" fill="white"/>
@@ -29,10 +34,10 @@ const userIcon = new L.Icon({
 });
 
 const stationIcon = new L.Icon({
-  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+  iconUrl: svgToDataUri(`
     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
       <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z" fill="#22c55e"/>
-      <text x="14" y="18" text-anchor="middle" fill="white" font-size="14">⚡</text>
+      <text x="14" y="18" text-anchor="middle" fill="white" font-size="14">&#x26A1;</text>
     </svg>
   `),
   iconSize: [28, 38],
