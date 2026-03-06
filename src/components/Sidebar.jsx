@@ -11,13 +11,11 @@ export default function Sidebar({
   onStationClick,
   selectedStation,
   onGetDirections,
-  trackFilterChange,
 }) {
   const { t } = useTranslation();
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    trackFilterChange();
   };
 
   return (
