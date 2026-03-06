@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import StationCard from './StationCard';
-import NativeAd from './NativeAd';
+import AdBanner from './AdBanner';
 
 export default function Sidebar({
   stations,
@@ -77,7 +77,11 @@ export default function Sidebar({
               onClick={() => onStationClick(station)}
               onGetDirections={() => onGetDirections(station)}
             />
-            {(index + 1) % 4 === 0 && <NativeAd />}
+            {(index + 1) % 5 === 0 && (
+              <div className="sidebar-ad-slot">
+                <AdBanner slot="SIDEBAR_SLOT" format="fluid" className="sidebar-ad" />
+              </div>
+            )}
           </div>
         ))}
       </div>
