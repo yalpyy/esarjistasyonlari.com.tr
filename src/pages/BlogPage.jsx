@@ -14,18 +14,12 @@ export default function BlogPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const stripHtml = (html) => {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.textContent || div.innerText || '';
-  };
-
   return (
     <div className="blog-page">
-      <div className="blog-header">
+      <header className="blog-header">
         <h1>{t('blogTitle')}</h1>
         <h2>{t('blogSubtitle')}</h2>
-      </div>
+      </header>
 
       {loading && <div className="loading-text">{t('loading')}</div>}
 
@@ -42,20 +36,35 @@ export default function BlogPage() {
                 alt={post.title}
                 className="blog-card-image"
                 loading="lazy"
+                onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
             <div className="blog-card-body">
-              <h2 className="blog-card-title">
+              <h1 className="blog-card-title">
                 <a href={post.link} target="_blank" rel="noopener noreferrer">
                   {post.title}
                 </a>
-              </h2>
+              </h1>
+              {post.author && (
+                <p className="blog-card-author">{post.author}</p>
+              )}
               <p className="blog-card-date">
-                {new Date(post.pubDate).toLocaleDateString('tr-TR')}
+                {new Date(post.pubDate).toLocaleDateString('tr-TR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
               </p>
               <p className="blog-card-excerpt">
-                {stripHtml(post.description).substring(0, 200)}...
+                {post.description}...
               </p>
+              {post.categories && post.categories.length > 0 && (
+                <div className="blog-card-tags">
+                  {post.categories.slice(0, 3).map((tag) => (
+                    <span key={tag} className="blog-tag">{tag}</span>
+                  ))}
+                </div>
+              )}
               <a
                 href={post.link}
                 target="_blank"

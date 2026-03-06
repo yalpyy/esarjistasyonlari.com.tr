@@ -650,6 +650,33 @@
   margin-bottom: 1rem;
 }
 
+.blog-card-author {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.blog-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.blog-tag {
+  font-size: 0.7rem;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.blog-card-title {
+  font-size: 1.05rem;
+}
+
 .blog-read-more {
   font-size: 0.85rem;
   font-weight: 600;
