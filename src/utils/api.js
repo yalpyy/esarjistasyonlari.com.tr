@@ -1,5 +1,6 @@
+// Vite projelerinde ortam değişkenleri import.meta.env ile okunur
 const OCM_API = 'https://api.openchargemap.io/v3/poi';
-const OCM_KEY = ''; // Free tier works without key for moderate usage
+const OCM_KEY = import.meta.env.VITE_OCM_API_KEY || ''; 
 
 export async function fetchStations({ lat, lng, distance = 100, maxResults = 500 } = {}) {
   const params = new URLSearchParams({
@@ -10,6 +11,12 @@ export async function fetchStations({ lat, lng, distance = 100, maxResults = 500
     verbose: 'false',
   });
 
+  // API Key varsa ekle (Vercel'den gelir)
+  if (OCM_KEY) {
+    params.set('key', OCM_KEY);
+  }
+
+  // Koordinat varsa ekle (Koordinat sorguları Key şartı arar)
   if (lat && lng) {
     params.set('latitude', String(lat));
     params.set('longitude', String(lng));
@@ -17,14 +24,30 @@ export async function fetchStations({ lat, lng, distance = 100, maxResults = 500
     params.set('distanceunit', 'KM');
   }
 
-  if (OCM_KEY) {
-    params.set('key', OCM_KEY);
-  }
+  try {
+    const response = await fetch(`${OCM_API}?${params}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
 
-  const response = await fetch(`${OCM_API}?${params}`);
-  if (!response.ok) throw new Error('Failed to fetch stations');
-  return response.json();
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('API Error Response:', errorData);
+      throw new Error(`Status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Fetch stations failed:', error);
+    // Hata durumunda boş dizi dön ki uygulama siyah ekran olmasın
+    return [];
+  }
 }
+
+// normalizeStation ve diğer blog fonksiyonların aynı kalabilir...
 
 export function normalizeStation(raw) {
   const addr = raw.AddressInfo || {};
