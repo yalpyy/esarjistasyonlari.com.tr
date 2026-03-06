@@ -1,7 +1,11 @@
 const OCM_API = 'https://api.openchargemap.io/v3/poi';
-const OCM_KEY = ''; // Free tier works without key for moderate usage
+const OCM_KEY = import.meta.env.VITE_OCM_API_KEY || '';
 
-export async function fetchStations({ lat, lng, distance = 100, maxResults = 500 } = {}) {
+if (!OCM_KEY) {
+  console.warn('[EV Charging] VITE_OCM_API_KEY is not set. OpenChargeMap requests may fail with 403. Add it to your .env file.');
+}
+
+export async function fetchStations({ maxResults = 500 } = {}) {
   const params = new URLSearchParams({
     output: 'json',
     countrycode: 'TR',
@@ -9,13 +13,6 @@ export async function fetchStations({ lat, lng, distance = 100, maxResults = 500
     compact: 'true',
     verbose: 'false',
   });
-
-  if (lat && lng) {
-    params.set('latitude', String(lat));
-    params.set('longitude', String(lng));
-    params.set('distance', String(distance));
-    params.set('distanceunit', 'KM');
-  }
 
   if (OCM_KEY) {
     params.set('key', OCM_KEY);
@@ -101,7 +98,7 @@ function parseMediumRssWithDOMParser(xmlText) {
       item.querySelector('description')?.textContent || contentEncoded;
 
     const thumbnail = extractImageFromContent(contentEncoded || description);
-    const excerpt = stripHtmlRaw(description).substring(0, 250);
+    const excerpt = stripHtmlRaw(description).substring(0, 450);
 
     const categories = [];
     item.querySelectorAll('category').forEach((cat) => {
@@ -128,7 +125,7 @@ export async function fetchBlogPosts() {
           pubDate: item.pubDate,
           author: item.author,
           thumbnail: item.thumbnail || extractImageFromContent(item.content || item.description),
-          description: stripHtmlRaw(item.description || item.content).substring(0, 250),
+          description: stripHtmlRaw(item.description || item.content).substring(0, 450),
           categories: item.categories || [],
         }));
       }

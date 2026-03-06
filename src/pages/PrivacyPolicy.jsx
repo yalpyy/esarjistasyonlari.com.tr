@@ -20,7 +20,7 @@ function PrivacyTR() {
       <section>
         <h2>1. Giriş</h2>
         <p>
-          esarjistasyonlari.com.tr (&quot;Site&quot;) olarak kullanıcılarımızın gizliliğine
+          esarjistasyonu.com.tr (&quot;Site&quot;) olarak kullanıcılarımızın gizliliğine
           saygı duyuyoruz. Bu Gizlilik Politikası, sitemizi ziyaret ettiğinizde hangi bilgilerin
           toplandığını, nasıl kullanıldığını ve nasıl korunduğunu açıklamaktadır.
         </p>
@@ -105,7 +105,7 @@ function PrivacyTR() {
         <h2>7. İletişim</h2>
         <p>
           Gizlilik politikamızla ilgili sorularınız için{' '}
-          <a href="mailto:business@esarjistasyonlari.com.tr">business@esarjistasyonlari.com.tr</a>{' '}
+          <a href="mailto:softcorptr@gmail.com">softcorptr@gmail.com</a>{' '}
           adresinden bize ulaşabilirsiniz.
         </p>
       </section>
@@ -131,7 +131,7 @@ function PrivacyEN() {
       <section>
         <h2>1. Introduction</h2>
         <p>
-          esarjistasyonlari.com.tr (&quot;Site&quot;) respects the privacy of our users. This Privacy
+          esarjistasyonu.com.tr (&quot;Site&quot;) respects the privacy of our users. This Privacy
           Policy explains what information is collected when you visit our site, how it is used,
           and how it is protected.
         </p>
@@ -211,7 +211,7 @@ function PrivacyEN() {
         <h2>7. Contact</h2>
         <p>
           For questions about our privacy policy, please contact us at{' '}
-          <a href="mailto:business@esarjistasyonlari.com.tr">business@esarjistasyonlari.com.tr</a>.
+          <a href="mailto:softcorptr@gmail.com">softcorptr@gmail.com</a>.
         </p>
       </section>
 

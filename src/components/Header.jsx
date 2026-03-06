@@ -12,7 +12,7 @@ export default function Header() {
   return (
     <header className="app-header">
       <Link to="/" className="header-brand">
-        <span className="header-icon">⚡</span>
+        <img src="/assets/logo.png" alt="Logo" className="header-logo" />
         <span className="header-title">{t('appTitle')}</span>
       </Link>
       <nav className="header-nav">

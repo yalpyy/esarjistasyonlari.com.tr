@@ -19,7 +19,7 @@ function AboutTR() {
       <section>
         <h2>E-Şarj İstasyonları Nedir?</h2>
         <p>
-          esarjistasyonlari.com.tr, Türkiye genelindeki elektrikli araç şarj istasyonlarını
+          esarjistasyonu.com.tr, Türkiye genelindeki elektrikli araç şarj istasyonlarını
           tek bir harita üzerinde toplayan, kullanıcı dostu ve hızlı bir şarj istasyonu
           rehberidir. Amacımız, elektrikli araç sahiplerinin en yakın şarj noktasını kolayca
           bulmasını, filtrelemesini ve anında yol tarifi almasını sağlamaktır.
@@ -80,7 +80,7 @@ function AboutTR() {
           Şarj istasyonu işletmecisiyseniz veya yeni bir şarj noktası açmayı planlıyorsanız,
           platformumuza işletmenizi eklemek için <strong>&quot;İşletmeni Ekle&quot;</strong> formunu
           kullanabilirsiniz. İş birliği teklifleriniz için{' '}
-          <a href="mailto:business@esarjistasyonlari.com.tr">business@esarjistasyonlari.com.tr</a>{' '}
+          <a href="mailto:softcorptr@gmail.com">softcorptr@gmail.com</a>{' '}
           adresinden bize ulaşabilirsiniz.
         </p>
       </section>
@@ -89,7 +89,7 @@ function AboutTR() {
         <h2>İletişim</h2>
         <p>
           Soru, öneri ve geri bildirimleriniz için{' '}
-          <a href="mailto:business@esarjistasyonlari.com.tr">business@esarjistasyonlari.com.tr</a>{' '}
+          <a href="mailto:softcorptr@gmail.com">softcorptr@gmail.com</a>{' '}
           adresinden bize yazabilirsiniz.
         </p>
       </section>
@@ -105,7 +105,7 @@ function AboutEN() {
       <section>
         <h2>What is E-Charging Stations?</h2>
         <p>
-          esarjistasyonlari.com.tr is a user-friendly and fast charging station guide that
+          esarjistasyonu.com.tr is a user-friendly and fast charging station guide that
           consolidates all electric vehicle charging stations across Turkey on a single map.
           Our goal is to help EV owners easily find the nearest charging point, filter stations,
           and get instant directions.
@@ -166,7 +166,7 @@ function AboutEN() {
           If you operate a charging station or plan to open a new charging point, you can use
           our <strong>&quot;Add Your Business&quot;</strong> form to list your station on our platform.
           For partnership inquiries, contact us at{' '}
-          <a href="mailto:business@esarjistasyonlari.com.tr">business@esarjistasyonlari.com.tr</a>.
+          <a href="mailto:softcorptr@gmail.com">softcorptr@gmail.com</a>.
         </p>
       </section>
 
@@ -174,7 +174,7 @@ function AboutEN() {
         <h2>Contact</h2>
         <p>
           For questions, suggestions, and feedback, you can reach us at{' '}
-          <a href="mailto:business@esarjistasyonlari.com.tr">business@esarjistasyonlari.com.tr</a>.
+          <a href="mailto:softcorptr@gmail.com">softcorptr@gmail.com</a>.
         </p>
       </section>
     </article>

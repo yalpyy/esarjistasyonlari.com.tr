@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 import MapContainerComponent from '../components/MapContainer';
 import Sidebar from '../components/Sidebar';
 import InterstitialAd from '../components/InterstitialAd';
+import DirectionsModal from '../components/DirectionsModal';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useStations } from '../hooks/useStations';
 import { useAdInterstitial } from '../hooks/useAdInterstitial';
-import { openDirections } from '../utils/NavigationHelper';
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -15,11 +15,12 @@ export default function HomePage() {
   const [selectedStation, setSelectedStation] = useState(null);
   const { showAd, triggerAdOnDirections, trackFilterChange, closeAd } = useAdInterstitial();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [directionsStation, setDirectionsStation] = useState(null);
 
   const handleGetDirections = useCallback(
     (station) => {
       triggerAdOnDirections(() => {
-        openDirections(station.lat, station.lng);
+        setDirectionsStation(station);
       });
     },
     [triggerAdOnDirections]
@@ -65,6 +66,12 @@ export default function HomePage() {
       />
 
       {showAd && <InterstitialAd onClose={closeAd} />}
+      {directionsStation && (
+        <DirectionsModal
+          station={directionsStation}
+          onClose={() => setDirectionsStation(null)}
+        />
+      )}
     </div>
   );
 }
