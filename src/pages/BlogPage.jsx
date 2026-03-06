@@ -3,6 +3,28 @@ import { useTranslation } from 'react-i18next';
 import { fetchBlogPosts } from '../utils/api';
 import AdBanner from '../components/AdBanner';
 
+function BlogSkeleton({ count = 6 }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="blog-card blog-card--skeleton">
+          <div className="skeleton-image skeleton-pulse" />
+          <div className="blog-card-body">
+            <div className="skeleton-line skeleton-line--title skeleton-pulse" />
+            <div className="skeleton-line skeleton-line--meta skeleton-pulse" />
+            <div className="skeleton-line skeleton-line--text skeleton-pulse" />
+            <div className="skeleton-line skeleton-line--text skeleton-line--short skeleton-pulse" />
+            <div className="skeleton-tags">
+              <div className="skeleton-tag skeleton-pulse" />
+              <div className="skeleton-tag skeleton-pulse" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 export default function BlogPage() {
   const { t } = useTranslation();
   const [posts, setPosts] = useState([]);
@@ -22,18 +44,18 @@ export default function BlogPage() {
         <h2>{t('blogSubtitle')}</h2>
       </header>
 
-      {loading && <div className="loading-text">{t('loading')}</div>}
-
-      {!loading && posts.length === 0 && (
-        <div className="empty-text">{t('noBlogPosts')}</div>
-      )}
-
       <div className="blog-ad-top">
         <AdBanner slot="BLOG_TOP_SLOT" format="auto" className="blog-ad-banner" />
       </div>
 
       <div className="blog-grid">
-        {posts.map((post, index) => (
+        {loading && <BlogSkeleton count={6} />}
+
+        {!loading && posts.length === 0 && (
+          <div className="blog-empty">{t('noBlogPosts')}</div>
+        )}
+
+        {!loading && posts.map((post, index) => (
           <React.Fragment key={index}>
             <article className="blog-card">
               {post.thumbnail && (
@@ -46,11 +68,11 @@ export default function BlogPage() {
                 />
               )}
               <div className="blog-card-body">
-                <h1 className="blog-card-title">
+                <h3 className="blog-card-title">
                   <a href={post.link} target="_blank" rel="noopener noreferrer">
                     {post.title}
                   </a>
-                </h1>
+                </h3>
                 {post.author && (
                   <p className="blog-card-author">{post.author}</p>
                 )}

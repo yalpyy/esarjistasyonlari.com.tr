@@ -123,15 +123,21 @@ function parseMediumRssWithDOMParser(xmlText) {
   return posts;
 }
 
+const CORS_PROXIES = [
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
 export async function fetchBlogPosts() {
-  // Strategy 1: rss2json API
+  // Strategy 1: rss2json API (handles CORS, most reliable)
   try {
     const params = new URLSearchParams({ rss_url: MEDIUM_FEED_URL });
     const response = await fetch(`${RSS2JSON_API}?${params}`);
     if (response.ok) {
       const data = await response.json();
       if (data.status === 'ok' && data.items && data.items.length > 0) {
-        return data.items.map((item) => ({
+        const posts = data.items.map((item) => ({
           title: item.title,
           link: item.link,
           pubDate: item.pubDate,
@@ -140,19 +146,47 @@ export async function fetchBlogPosts() {
           description: stripHtmlRaw(item.description || item.content).substring(0, 450),
           categories: item.categories || [],
         }));
+        console.log('[Blog] Loaded via rss2json:', posts.length, 'posts');
+        return posts;
       }
     }
-  } catch { /* fall through */ }
+  } catch (e) {
+    console.warn('[Blog] rss2json failed:', e.message);
+  }
 
-  // Strategy 2: CORS proxy + DOMParser
+  // Strategy 2: Try multiple CORS proxies + DOMParser
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    try {
+      const proxyUrl = CORS_PROXIES[i](MEDIUM_FEED_URL);
+      const response = await fetch(proxyUrl);
+      if (response.ok) {
+        const xmlText = await response.text();
+        const posts = parseMediumRssWithDOMParser(xmlText);
+        if (posts.length > 0) {
+          console.log(`[Blog] Loaded via CORS proxy ${i + 1}:`, posts.length, 'posts');
+          return posts;
+        }
+      }
+    } catch (e) {
+      console.warn(`[Blog] CORS proxy ${i + 1} failed:`, e.message);
+    }
+  }
+
+  // Strategy 3: Direct fetch (works if no CORS restriction)
   try {
-    const corsProxy = 'https://api.allorigins.win/raw?url=';
-    const response = await fetch(corsProxy + encodeURIComponent(MEDIUM_FEED_URL));
+    const response = await fetch(MEDIUM_FEED_URL);
     if (response.ok) {
       const xmlText = await response.text();
-      return parseMediumRssWithDOMParser(xmlText);
+      const posts = parseMediumRssWithDOMParser(xmlText);
+      if (posts.length > 0) {
+        console.log('[Blog] Loaded via direct fetch:', posts.length, 'posts');
+        return posts;
+      }
     }
-  } catch { /* fall through */ }
+  } catch (e) {
+    console.warn('[Blog] Direct fetch failed:', e.message);
+  }
 
+  console.warn('[Blog] All strategies failed, returning empty array');
   return [];
 }
