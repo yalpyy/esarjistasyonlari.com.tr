@@ -1,3 +1,4 @@
+// Vite projelerinde ortam değişkenleri import.meta.env ile okunur
 const OCM_API = 'https://api.openchargemap.io/v3/poi';
 const OCM_KEY = import.meta.env.VITE_OCM_API_KEY || '';
 
@@ -18,10 +19,21 @@ export async function fetchStations({ maxResults = 500 } = {}) {
     params.set('key', OCM_KEY);
   }
 
-  const response = await fetch(`${OCM_API}?${params}`);
-  if (!response.ok) throw new Error('Failed to fetch stations');
-  return response.json();
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('API Error Response:', errorData);
+      throw new Error(`Status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Fetch stations failed:', error);
+    // Hata durumunda boş dizi dön ki uygulama siyah ekran olmasın
+    return [];
+  }
 }
+
+// normalizeStation ve diğer blog fonksiyonların aynı kalabilir...
 
 export function normalizeStation(raw) {
   const addr = raw.AddressInfo || {};
