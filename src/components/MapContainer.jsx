@@ -15,7 +15,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// UTF-8 safe SVG → data URI (encodeURIComponent instead of btoa)
 function svgToDataUri(svg) {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.trim());
 }
@@ -44,6 +43,18 @@ const stationIcon = new L.Icon({
   iconAnchor: [14, 38],
   popupAnchor: [0, -38],
 });
+
+// Fix Leaflet black screen on page transitions (SPA)
+function InvalidateSizeOnMount() {
+  const map = useMap();
+  useEffect(() => {
+    // Immediate + delayed invalidateSize to catch all rendering states
+    map.invalidateSize();
+    const timer = setTimeout(() => map.invalidateSize(), 300);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
 
 function MarkerClusterGroup({ stations, onStationClick }) {
   const map = useMap();
@@ -96,6 +107,21 @@ function MarkerClusterGroup({ stations, onStationClick }) {
   return null;
 }
 
+// Fly to user position when geolocation resolves
+function FlyToUser({ position }) {
+  const map = useMap();
+  const hasFlewRef = useRef(false);
+
+  useEffect(() => {
+    if (position && !hasFlewRef.current) {
+      hasFlewRef.current = true;
+      map.flyTo([position.lat, position.lng], 13, { duration: 1.5 });
+    }
+  }, [position, map]);
+
+  return null;
+}
+
 function FlyToLocation({ position, zoom }) {
   const map = useMap();
   useEffect(() => {
@@ -106,6 +132,10 @@ function FlyToLocation({ position, zoom }) {
   return null;
 }
 
+// Default: Turkey center
+const TURKEY_CENTER = { lat: 39.0, lng: 35.0 };
+const DEFAULT_ZOOM = 6.5;
+
 export default function MapContainerComponent({
   userPosition,
   stations,
@@ -113,17 +143,16 @@ export default function MapContainerComponent({
   onStationClick,
 }) {
   const { t } = useTranslation();
-  const center = userPosition || { lat: 39.0, lng: 35.0 };
-  const zoom = userPosition ? 13 : 6.5;
 
   return (
     <div className="map-wrapper">
       <LeafletMap
-        center={[center.lat, center.lng]}
-        zoom={zoom}
+        center={[TURKEY_CENTER.lat, TURKEY_CENTER.lng]}
+        zoom={DEFAULT_ZOOM}
         className="leaflet-map"
         zoomControl={true}
       >
+        <InvalidateSizeOnMount />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -135,6 +164,7 @@ export default function MapContainerComponent({
           </Marker>
         )}
 
+        <FlyToUser position={userPosition} />
         <MarkerClusterGroup stations={stations} onStationClick={onStationClick} />
 
         {selectedStation && (

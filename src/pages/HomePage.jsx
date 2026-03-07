@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import MapContainerComponent from '../components/MapContainer';
 import Sidebar from '../components/Sidebar';
@@ -10,13 +10,12 @@ import { useAdInterstitial } from '../hooks/useAdInterstitial';
 
 export default function HomePage() {
   const { t } = useTranslation();
-  const { position, error: geoError } = useGeolocation();
+  const { position, error: geoError, loading: geoLoading } = useGeolocation();
   const { stations, loading, filters, setFilters, operators } = useStations(position);
   const [selectedStation, setSelectedStation] = useState(null);
   const { showAd, triggerAdOnDirections, trackFilterChange, closeAd } = useAdInterstitial();
   const [directionsStation, setDirectionsStation] = useState(null);
 
-  // Bottom sheet state: 'collapsed' or 'expanded'
   const [sheetState, setSheetState] = useState('collapsed');
   const sheetRef = useRef(null);
   const dragRef = useRef({ startY: 0, startHeight: 0, dragging: false });
@@ -48,7 +47,6 @@ export default function HomePage() {
     [setFilters, trackFilterChange]
   );
 
-  // Touch drag handlers for handle bar
   const handleTouchStart = useCallback((e) => {
     const touch = e.touches[0];
     const sheet = sheetRef.current;
@@ -94,7 +92,14 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      {geoError && (
+      {geoLoading && (
+        <div className="geo-loading-overlay">
+          <div className="geo-loading-spinner" />
+          <span>{t('searchingLocation') || 'Konum aranıyor...'}</span>
+        </div>
+      )}
+
+      {!geoLoading && geoError && (
         <div className="geo-notice">{t('locationPermission')}</div>
       )}
 
@@ -102,27 +107,30 @@ export default function HomePage() {
         ref={sheetRef}
         className={`sidebar-wrapper bottom-sheet bottom-sheet--${sheetState}`}
       >
+        {/* Drag handle area */}
         <div
           className="bottom-sheet-handle"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onClick={toggleSheet}
         >
           <div className="bottom-sheet-handle-bar" />
-          <button
-            className="bottom-sheet-toggle-btn"
-            aria-label={sheetState === 'collapsed' ? 'Genişlet' : 'Küçült'}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              {sheetState === 'collapsed' ? (
-                <path d="M7 14l5-5 5 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              ) : (
-                <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              )}
-            </svg>
-          </button>
         </div>
+
+        {/* Fixed toggle button - always visible, doesn't overlap content */}
+        <button
+          className="bottom-sheet-toggle-btn"
+          onClick={toggleSheet}
+          aria-label={sheetState === 'collapsed' ? 'Genişlet' : 'Küçült'}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            {sheetState === 'collapsed' ? (
+              <path d="M7 14l5-5 5 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            ) : (
+              <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+          </svg>
+        </button>
 
         <Sidebar
           stations={stations}
