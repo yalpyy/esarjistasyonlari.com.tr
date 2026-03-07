@@ -1094,7 +1094,7 @@
 @media (max-width: 768px) {
   .sidebar-wrapper.bottom-sheet {
     position: fixed;
-    bottom: 0;
+    bottom: 50px;
     left: 0;
     right: 0;
     top: auto;
@@ -1110,10 +1110,11 @@
   .sidebar-wrapper.bottom-sheet .sidebar {
     border-right: none;
     border-radius: 16px 16px 0 0;
+    padding-bottom: 1rem;
   }
 
   .sidebar-wrapper.bottom-sheet--expanded {
-    height: 100vh;
+    height: calc(100vh - 50px);
     border-radius: 0;
   }
 
@@ -1140,7 +1141,7 @@
   }
 
   .contact-fab {
-    bottom: calc(30vh + 1rem);
+    bottom: calc(30vh + 50px + 1rem);
     transition: bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -1150,7 +1151,7 @@
   }
 
   .contact-panel {
-    bottom: calc(30vh + 4rem);
+    bottom: calc(30vh + 50px + 4rem);
     right: 1rem;
     left: 1rem;
     width: auto;
