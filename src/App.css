@@ -592,12 +592,12 @@
 .blog-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
 .blog-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1rem;
 }
 
 .blog-header h1 {
@@ -900,7 +900,7 @@
 }
 
 .blog-ad-top {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .blog-ad-banner {
@@ -1068,9 +1068,9 @@
 
 .bottom-sheet-toggle-btn {
   position: absolute;
-  top: 50%;
-  right: 1rem;
-  transform: translateY(-50%);
+  top: 0.5rem;
+  right: 0.75rem;
+  z-index: 10;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text-primary);
@@ -1088,6 +1088,38 @@
   background: var(--accent);
   color: #000;
   border-color: var(--accent);
+}
+
+/* ===== GEO LOADING OVERLAY ===== */
+.geo-loading-overlay {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.geo-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: geoSpin 0.8s linear infinite;
+}
+
+@keyframes geoSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1173,7 +1205,7 @@
   }
 
   .blog-page {
-    padding: 1.5rem 1rem 4rem;
+    padding: 0.75rem 1rem 4rem;
   }
 
   .blog-grid {
