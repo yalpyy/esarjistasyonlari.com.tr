@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 
-const TURKEY_CENTER = { lat: 39.9334, lng: 32.8597 };
-
 export function useGeolocation() {
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
@@ -10,7 +8,6 @@ export function useGeolocation() {
   useEffect(() => {
     if (!navigator.geolocation) {
       setError('Geolocation not supported');
-      setPosition(TURKEY_CENTER);
       setLoading(false);
       return;
     }
@@ -22,7 +19,6 @@ export function useGeolocation() {
       },
       (err) => {
         setError(err.message);
-        setPosition(TURKEY_CENTER);
         setLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
