@@ -64,11 +64,11 @@ export default function HomePage() {
     const delta = dragRef.current.startY - touch.clientY;
     const newHeight = dragRef.current.startHeight + delta;
     const vh = window.innerHeight;
-    const percent = Math.min(Math.max((newHeight / vh) * 100, 15), 100);
+    const percent = Math.min(Math.max((newHeight / vh) * 100, 15), 95);
     const sheet = sheetRef.current;
     if (sheet) {
       sheet.style.transition = 'none';
-      sheet.style.height = `${percent}vh`;
+      sheet.style.height = `${percent}dvh`;
     }
   }, []);
 
