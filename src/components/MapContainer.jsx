@@ -113,8 +113,8 @@ export default function MapContainerComponent({
   onStationClick,
 }) {
   const { t } = useTranslation();
-  const center = userPosition || { lat: 39.9334, lng: 32.8597 };
-  const zoom = userPosition ? 13 : 6;
+  const center = userPosition || { lat: 39.0, lng: 35.0 };
+  const zoom = userPosition ? 13 : 6.5;
 
   return (
     <div className="map-wrapper">

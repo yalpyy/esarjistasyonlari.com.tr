@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import BlogPage from './pages/BlogPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
+import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
 function AppLayout() {
@@ -35,6 +36,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppLayout />
+      <Analytics />
     </BrowserRouter>
   );
 }
