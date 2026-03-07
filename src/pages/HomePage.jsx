@@ -8,9 +8,6 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { useStations } from '../hooks/useStations';
 import { useAdInterstitial } from '../hooks/useAdInterstitial';
 
-const COLLAPSED_PERCENT = 30;
-const EXPANDED_PERCENT = 100;
-
 export default function HomePage() {
   const { t } = useTranslation();
   const { position, error: geoError } = useGeolocation();
@@ -19,10 +16,14 @@ export default function HomePage() {
   const { showAd, triggerAdOnDirections, trackFilterChange, closeAd } = useAdInterstitial();
   const [directionsStation, setDirectionsStation] = useState(null);
 
-  // Bottom sheet state: 'collapsed' (30%) or 'expanded' (100%)
+  // Bottom sheet state: 'collapsed' or 'expanded'
   const [sheetState, setSheetState] = useState('collapsed');
   const sheetRef = useRef(null);
   const dragRef = useRef({ startY: 0, startHeight: 0, dragging: false });
+
+  const toggleSheet = useCallback(() => {
+    setSheetState((prev) => (prev === 'collapsed' ? 'expanded' : 'collapsed'));
+  }, []);
 
   const handleGetDirections = useCallback(
     (station) => {
@@ -38,7 +39,6 @@ export default function HomePage() {
     setSheetState('collapsed');
   }, []);
 
-  // Wraps setFilters to auto-expand the bottom sheet on filter change
   const handleFilterChange = useCallback(
     (updater) => {
       setFilters(updater);
@@ -85,20 +85,12 @@ export default function HomePage() {
     sheet.style.transition = '';
     sheet.style.height = '';
 
-    // Snap: if dragged past 55%, expand; otherwise collapse
     if (percent > 55) {
       setSheetState('expanded');
     } else {
       setSheetState('collapsed');
     }
   }, []);
-
-  // Apply height based on state
-  useEffect(() => {
-    const sheet = sheetRef.current;
-    if (!sheet) return;
-    // Only apply on mobile via CSS (desktop ignores these)
-  }, [sheetState]);
 
   return (
     <div className="home-page">
@@ -115,21 +107,22 @@ export default function HomePage() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onClick={toggleSheet}
         >
           <div className="bottom-sheet-handle-bar" />
-        </div>
-
-        {sheetState === 'expanded' && (
           <button
-            className="bottom-sheet-collapse-btn"
-            onClick={() => setSheetState('collapsed')}
-            aria-label={t('close') || 'Küçült'}
+            className="bottom-sheet-toggle-btn"
+            aria-label={sheetState === 'collapsed' ? 'Genişlet' : 'Küçült'}
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 13L5 8h10L10 13z" fill="currentColor" />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              {sheetState === 'collapsed' ? (
+                <path d="M7 14l5-5 5 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              ) : (
+                <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              )}
             </svg>
           </button>
-        )}
+        </div>
 
         <Sidebar
           stations={stations}
