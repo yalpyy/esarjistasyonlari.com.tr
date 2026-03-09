@@ -8,7 +8,7 @@ export default function StickyBanner() {
           slot="STICKY_MOBILE_SLOT"
           format="auto"
           responsive={false}
-          style={{ width: 320, height: 50 }}
+          style={{ width: 430, height: 49 }}
         />
       </div>
     </div>
