@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchBlogPosts } from '../utils/api';
-import AdBanner from '../components/AdBanner';
 
 function BlogSkeleton({ count = 6 }) {
   return (
@@ -43,10 +42,6 @@ export default function BlogPage() {
         <h1>Blog</h1>
         <h2>{t('blogSubtitle')}</h2>
       </header>
-
-      <div className="blog-ad-top">
-        <AdBanner slot="BLOG_TOP_SLOT" format="auto" className="blog-ad-banner" />
-      </div>
 
       <div className="blog-grid">
         {loading && <BlogSkeleton count={6} />}
@@ -103,17 +98,8 @@ export default function BlogPage() {
                 </a>
               </div>
             </article>
-            {(index + 1) % 3 === 0 && (
-              <div className="blog-inline-ad">
-                <AdBanner slot="BLOG_INLINE_SLOT" format="auto" className="blog-ad-banner" />
-              </div>
-            )}
           </React.Fragment>
         ))}
-      </div>
-
-      <div className="blog-ad-bottom">
-        <AdBanner slot="BLOG_BOTTOM_SLOT" format="auto" className="blog-ad-banner" />
       </div>
     </div>
   );
