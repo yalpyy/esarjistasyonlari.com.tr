@@ -8,6 +8,7 @@ import BlogPage from './pages/BlogPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import './App.css';
 
 function AppLayout() {
@@ -37,6 +38,7 @@ export default function App() {
     <BrowserRouter>
       <AppLayout />
       <Analytics />
+      <SpeedInsights />
     </BrowserRouter>
   );
 }
