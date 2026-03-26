@@ -7,6 +7,10 @@ import HomePage from './pages/HomePage';
 import BlogPage from './pages/BlogPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AboutUs from './pages/AboutUs';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
+import EvChargingGuide from './pages/EvChargingGuide';
+import NotFound from './pages/NotFound';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
@@ -23,6 +27,10 @@ function AppLayout() {
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/gizlilik-politikasi" element={<PrivacyPolicy />} />
           <Route path="/hakkimizda" element={<AboutUs />} />
+          <Route path="/kullanim-sartlari" element={<TermsOfService />} />
+          <Route path="/cerez-politikasi" element={<CookiePolicy />} />
+          <Route path="/ev-sarj-rehberi" element={<EvChargingGuide />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
         {!isMapPage && <Footer />}
       </main>

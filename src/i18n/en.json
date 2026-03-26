@@ -55,5 +55,13 @@
   "allRightsReserved": "All rights reserved.",
   "chooseMapApp": "Choose Map App",
   "googleMaps": "Google Maps",
-  "appleMaps": "Apple Maps"
+  "appleMaps": "Apple Maps",
+  "termsOfService": "Terms of Service",
+  "cookiePolicy": "Cookie Policy",
+  "evGuide": "EV Charging Guide",
+  "pageNotFound": "Page Not Found",
+  "pageNotFoundDesc": "The page you are looking for does not exist or may have been moved.",
+  "goHome": "Go Home",
+  "goGuide": "Charging Guide",
+  "goBlog": "Go to Blog"
 }

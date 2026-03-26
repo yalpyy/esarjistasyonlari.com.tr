@@ -12,6 +12,12 @@ export default function Footer() {
           <span className="footer-sep">|</span>
           <Link to="/gizlilik-politikasi">{t('privacyPolicy')}</Link>
           <span className="footer-sep">|</span>
+          <Link to="/kullanim-sartlari">{t('termsOfService')}</Link>
+          <span className="footer-sep">|</span>
+          <Link to="/cerez-politikasi">{t('cookiePolicy')}</Link>
+          <span className="footer-sep">|</span>
+          <Link to="/ev-sarj-rehberi">{t('evGuide')}</Link>
+          <span className="footer-sep">|</span>
           <Link to="/blog">{t('blog')}</Link>
         </div>
         <p className="footer-copy">

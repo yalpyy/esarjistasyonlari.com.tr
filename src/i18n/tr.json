@@ -55,5 +55,13 @@
   "allRightsReserved": "Tüm hakları saklıdır.",
   "chooseMapApp": "Harita Uygulaması Seçin",
   "googleMaps": "Google Haritalar",
-  "appleMaps": "Apple Haritalar"
+  "appleMaps": "Apple Haritalar",
+  "termsOfService": "Kullanım Şartları",
+  "cookiePolicy": "Çerez Politikası",
+  "evGuide": "EV Şarj Rehberi",
+  "pageNotFound": "Sayfa Bulunamadı",
+  "pageNotFoundDesc": "Aradığınız sayfa bulunamadı veya taşınmış olabilir.",
+  "goHome": "Ana Sayfaya Dön",
+  "goGuide": "Şarj Rehberine Git",
+  "goBlog": "Blog'a Git"
 }
