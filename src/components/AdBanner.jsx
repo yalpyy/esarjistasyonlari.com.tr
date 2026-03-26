@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useAdsenseSafePush } from '../hooks/useAdsenseSafePush';
 
 const AD_CLIENT = 'ca-pub-8596736740004807';
 
@@ -9,27 +9,17 @@ export default function AdBanner({
   style = {},
   className = '',
 }) {
-  const adRef = useRef(null);
-  const pushed = useRef(false);
-
-  useEffect(() => {
-    if (pushed.current) return;
-    try {
-      if (adRef.current && window.adsbygoogle) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        pushed.current = true;
-      }
-    } catch (e) {
-      console.warn('AdSense push error:', e);
-    }
-  }, []);
+  const { insRef } = useAdsenseSafePush();
 
   return (
-    <div className={`ad-banner-container ${className}`} style={style}>
+    <div
+      className={`ad-banner-container ${className}`}
+      style={{ width: '100%', minWidth: '250px', ...style }}
+    >
       <ins
         className="adsbygoogle"
-        ref={adRef}
-        style={{ display: 'block', ...style }}
+        ref={insRef}
+        style={{ display: 'block', width: '100%', ...style }}
         data-ad-client={AD_CLIENT}
         data-ad-slot={slot}
         data-ad-format={format}

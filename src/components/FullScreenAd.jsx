@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAdsenseSafePush } from '../hooks/useAdsenseSafePush';
 
 const AD_CLIENT = 'ca-pub-8596736740004807';
 const CLOSE_DELAY = 3; // seconds
@@ -8,21 +9,7 @@ export default function FullScreenAd({ onClose }) {
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState(CLOSE_DELAY);
   const canClose = countdown <= 0;
-  const adRef = useRef(null);
-  const pushed = useRef(false);
-
-  // Push AdSense ad
-  useEffect(() => {
-    if (pushed.current) return;
-    try {
-      if (adRef.current && window.adsbygoogle) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        pushed.current = true;
-      }
-    } catch (e) {
-      console.warn('FullScreenAd: AdSense push error:', e);
-    }
-  }, []);
+  const { insRef } = useAdsenseSafePush();
 
   // Countdown timer
   useEffect(() => {
@@ -61,10 +48,10 @@ export default function FullScreenAd({ onClose }) {
 
         <div className="fullscreen-ad-label">{t('adLabel') || 'Reklam'}</div>
 
-        <div className="fullscreen-ad-content">
+        <div className="fullscreen-ad-content" style={{ width: '100%', minWidth: '300px' }}>
           <ins
             className="adsbygoogle"
-            ref={adRef}
+            ref={insRef}
             style={{ display: 'block', width: '100%', minHeight: '250px' }}
             data-ad-client={AD_CLIENT}
             data-ad-slot="FULLSCREEN_AD_SLOT"
