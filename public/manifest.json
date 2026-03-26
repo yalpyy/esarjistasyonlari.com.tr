@@ -1,0 +1,21 @@
+{
+  "name": "E-Şarj İstasyonu - Türkiye Elektrikli Araç Şarj Rehberi",
+  "short_name": "E-Şarj",
+  "description": "Türkiye'nin en hızlı EV şarj istasyonu rehberi. Yakınındaki elektrikli araç şarj istasyonlarını harita üzerinde bul, filtrele ve yol tarifi al.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f0f0f",
+  "theme_color": "#22c55e",
+  "categories": ["utilities", "transportation"],
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
