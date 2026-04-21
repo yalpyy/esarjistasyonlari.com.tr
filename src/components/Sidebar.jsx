@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import StationCard from './StationCard';
 import AdBanner from './AdBanner';
+import QuickGuideCards from './QuickGuideCards';
 
 export default function Sidebar({
   stations,
@@ -63,6 +64,7 @@ export default function Sidebar({
       </div>
 
       <div className="station-list">
+        <QuickGuideCards />
         {loading && <div className="loading-text">{t('loading')}</div>}
         {!loading && stations.length === 0 && (
           <div className="empty-text">{t('noStationsFound')}</div>

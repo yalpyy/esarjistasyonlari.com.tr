@@ -63,5 +63,13 @@
   "pageNotFoundDesc": "Aradığınız sayfa bulunamadı veya taşınmış olabilir.",
   "goHome": "Ana Sayfaya Dön",
   "goGuide": "Şarj Rehberine Git",
-  "goBlog": "Blog'a Git"
+  "goBlog": "Blog'a Git",
+  "evGlossary": "EV Sözlüğü",
+  "rangeCalculator": "Menzil Hesaplayıcı",
+  "cityDirectory": "Şehirler",
+  "kvkk": "KVKK Aydınlatma",
+  "footerResources": "Kaynaklar",
+  "footerCompany": "Kurumsal",
+  "footerContact": "İletişim",
+  "footerNote": "Türkiye'nin elektrikli araç şarj rehberi. Veriler OpenChargeMap kaynağından sağlanmaktadır."
 }
