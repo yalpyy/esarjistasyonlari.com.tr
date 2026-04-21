@@ -63,5 +63,13 @@
   "pageNotFoundDesc": "The page you are looking for does not exist or may have been moved.",
   "goHome": "Go Home",
   "goGuide": "Charging Guide",
-  "goBlog": "Go to Blog"
+  "goBlog": "Go to Blog",
+  "evGlossary": "EV Glossary",
+  "rangeCalculator": "Range Calculator",
+  "cityDirectory": "Cities",
+  "kvkk": "Data Protection",
+  "footerResources": "Resources",
+  "footerCompany": "Company",
+  "footerContact": "Contact",
+  "footerNote": "Turkey's EV charging guide. Data sourced from OpenChargeMap."
 }

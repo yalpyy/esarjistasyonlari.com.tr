@@ -10,6 +10,10 @@ import AboutUs from './pages/AboutUs';
 import TermsOfService from './pages/TermsOfService';
 import CookiePolicy from './pages/CookiePolicy';
 import EvChargingGuide from './pages/EvChargingGuide';
+import EvGlossary from './pages/EvGlossary';
+import CityDirectory from './pages/CityDirectory';
+import RangeCalculator from './pages/RangeCalculator';
+import KvkkPage from './pages/KvkkPage';
 import NotFound from './pages/NotFound';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -31,6 +35,10 @@ function AppLayout() {
           <Route path="/kullanim-sartlari" element={<TermsOfService />} />
           <Route path="/cerez-politikasi" element={<CookiePolicy />} />
           <Route path="/ev-sarj-rehberi" element={<EvChargingGuide />} />
+          <Route path="/sozluk" element={<EvGlossary />} />
+          <Route path="/sehirler" element={<CityDirectory />} />
+          <Route path="/menzil-hesaplayici" element={<RangeCalculator />} />
+          <Route path="/kvkk" element={<KvkkPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         {!isMapPage && <Footer />}
