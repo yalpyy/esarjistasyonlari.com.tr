@@ -1361,7 +1361,7 @@
 @media (max-width: 768px) {
   .sidebar-wrapper.bottom-sheet {
     position: fixed;
-    bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+    bottom: env(safe-area-inset-bottom, 0px);
     left: 0;
     right: 0;
     top: auto;
@@ -1382,8 +1382,7 @@
   }
 
   .sidebar-wrapper.bottom-sheet--expanded {
-    /* Expand up to header: 100dvh - header(56px) - banner(49px) - safe areas */
-    height: calc(100dvh - 56px - 49px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    height: calc(100dvh - 56px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     border-radius: 0;
   }
 
@@ -1406,26 +1405,21 @@
   }
 
   .sticky-banner {
-    display: flex;
+    display: none;
   }
 
-  /* Constrain sidebar inline ads to standard banner size */
   .sidebar-ad-slot {
-    max-height: 60px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: none;
   }
 
-  .sidebar-ad-slot .ad-banner-container {
-    max-width: 320px;
-    max-height: 50px;
-    overflow: hidden;
+  .blog-inline-ad,
+  .blog-ad-top,
+  .blog-ad-bottom {
+    display: none;
   }
 
   .contact-fab {
-    bottom: calc(30dvh + 49px + env(safe-area-inset-bottom, 0px) + 1rem);
+    bottom: calc(30dvh + env(safe-area-inset-bottom, 0px) + 1rem);
     transition: bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -1435,10 +1429,24 @@
   }
 
   .contact-panel {
-    bottom: calc(30dvh + 49px + env(safe-area-inset-bottom, 0px) + 4rem);
+    bottom: calc(30dvh + env(safe-area-inset-bottom, 0px) + 4rem);
     right: 1rem;
     left: 1rem;
     width: auto;
+  }
+
+  .home-page {
+    flex-direction: column;
+  }
+
+  .sidebar-wrapper {
+    width: 100%;
+  }
+
+  .map-wrapper {
+    width: 100%;
+    height: 60vh;
+    min-height: 250px;
   }
 
   .blog-page {
@@ -1446,30 +1454,12 @@
   }
 
   .blog-grid {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
+    grid-template-columns: 1fr;
     gap: 1rem;
-    padding-bottom: 0.5rem;
-    scrollbar-width: none;
   }
 
-  .blog-grid::-webkit-scrollbar {
-    display: none;
-  }
-
-  .blog-grid .blog-card {
-    min-width: 280px;
-    max-width: 300px;
-    flex-shrink: 0;
-    scroll-snap-align: start;
-  }
-
-  .blog-grid .blog-inline-ad {
-    min-width: 280px;
-    flex-shrink: 0;
-    scroll-snap-align: start;
+  .blog-card {
+    width: 100%;
   }
 
   .blog-empty {
@@ -1488,8 +1478,60 @@
     font-size: 1.4rem;
   }
 
+  .legal-content p,
+  .legal-content ul li,
+  .legal-content ol li {
+    font-size: 0.9rem;
+  }
+
   .app-footer {
     padding: 0.75rem 1rem;
+  }
+
+  .header-nav a {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .header-nav {
+    gap: 0.5rem;
+  }
+
+  .directions-btn,
+  .guide-cta-btn,
+  .not-found-btn,
+  .btn-primary {
+    width: 100%;
+    display: block;
+    text-align: center;
+  }
+
+  .not-found-links {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .cities-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preset-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .speed-options {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .station-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .glossary-letter {
+    min-width: 28px;
+    height: 28px;
+    font-size: 0.78rem;
+    padding: 0 0.4rem;
   }
 }
 
@@ -1519,23 +1561,22 @@
   }
 
   .lang-toggle {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
   }
 
-  /* Smaller sidebar elements */
   .sidebar-header h2 {
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
   }
 
   .filter-btn {
-    font-size: 0.72rem;
-    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.6rem;
   }
 
   .filter-select {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     min-width: 100px;
   }
 
@@ -1544,39 +1585,63 @@
   }
 
   .station-title {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
   }
 
   .station-address {
-    font-size: 0.75rem;
+    font-size: 0.78rem;
   }
 
   .directions-btn {
-    padding: 0.6rem;
-    font-size: 0.82rem;
-    min-height: 40px;
+    padding: 0.7rem;
+    font-size: 0.85rem;
+    min-height: 44px;
   }
 
-  /* Bottom sheet adjustments for very small screens */
   .sidebar-wrapper.bottom-sheet {
     height: 28dvh;
   }
 
   .contact-fab {
-    bottom: calc(28dvh + 49px + env(safe-area-inset-bottom, 0px) + 0.5rem);
+    bottom: calc(28dvh + env(safe-area-inset-bottom, 0px) + 0.5rem);
   }
 
   .contact-panel {
-    bottom: calc(28dvh + 49px + env(safe-area-inset-bottom, 0px) + 3.5rem);
+    bottom: calc(28dvh + env(safe-area-inset-bottom, 0px) + 3.5rem);
   }
 
-  /* Blog compact */
   .blog-card-title {
     font-size: 0.9rem;
   }
 
   .blog-card-excerpt {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .legal-content p,
+  .legal-content ul li {
+    font-size: 0.88rem;
+  }
+
+  .glossary-def,
+  .city-card p,
+  .charge-note,
+  .charge-disclaimer,
+  .result-sub {
+    font-size: 0.85rem;
+  }
+
+  .calc-field > span {
+    font-size: 0.85rem;
+  }
+
+  .result-value {
+    font-size: 1.5rem;
+  }
+
+  .footer-column a,
+  .footer-note {
+    font-size: 0.82rem;
   }
 }
 
