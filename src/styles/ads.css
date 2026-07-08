@@ -1,0 +1,67 @@
+/* ===== ADIM 3: CLS-SAFE REKLAM STİLLERİ ===== */
+
+.ad-banner-container {
+  position: relative;
+}
+
+/* Yüklenene kadar gösterilen gri iskelet */
+.ad-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm, 8px);
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary, #252525) 25%,
+    var(--bg-hover, #2a2a2a) 50%,
+    var(--bg-tertiary, #252525) 75%
+  );
+  background-size: 200% 100%;
+  animation: ad-shimmer 1.4s ease infinite;
+}
+
+.ad-banner--filled .ad-skeleton {
+  display: none;
+}
+
+/* Reklam dolmazsa shimmer durur, sade etiket kalır (alan korunur → CLS yok) */
+.ad-banner--unfilled .ad-skeleton {
+  animation: none;
+}
+
+.ad-skeleton-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #666);
+}
+
+.ad-banner-container .adsbygoogle {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes ad-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-skeleton {
+    animation: none;
+  }
+}
+
+/* İstasyon detay paneli alt reklam slotu (masaüstü) */
+.sdp-ad {
+  margin: 1rem 0 0.25rem;
+}
+
+/* Mobilde panel içi reklam gösterilmez (mevcut mobil reklam stratejisiyle uyumlu) */
+@media (max-width: 768px) {
+  .sdp-ad {
+    display: none;
+  }
+}

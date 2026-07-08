@@ -16,9 +16,16 @@ export default function LocationSearchInput({ placeholder, value, onSelect, onCl
   const timerRef = useRef(null);
   const abortRef = useRef(null);
   const wrapperRef = useRef(null);
+  const skipSyncRef = useRef(false);
 
-  // Dışarıdan gelen değer değişirse inputu senkronla (swap butonu için)
+  // Dışarıdan gelen değer değişirse inputu senkronla (swap butonu için).
+  // Kullanıcı yazarken tetiklenen onClear kaynaklı değişimlerde atlanır,
+  // aksi halde input yazarken sıfırlanır.
   useEffect(() => {
+    if (skipSyncRef.current) {
+      skipSyncRef.current = false;
+      return;
+    }
     setQuery(value?.label || '');
   }, [value]);
 
@@ -66,7 +73,10 @@ export default function LocationSearchInput({ placeholder, value, onSelect, onCl
   const handleChange = (e) => {
     const text = e.target.value;
     setQuery(text);
-    if (value) onClear?.();
+    if (value) {
+      skipSyncRef.current = true;
+      onClear?.();
+    }
 
     clearTimeout(timerRef.current);
     if (text.trim().length < MIN_QUERY_LENGTH) {

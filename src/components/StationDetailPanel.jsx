@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import AdBanner from './AdBanner';
 
 /**
  * Pin'e tıklanınca açılan detay paneli.
@@ -119,6 +120,11 @@ export default function StationDetailPanel({ station, onClose, onGetDirections }
               </li>
             ))}
           </ul>
+
+          {/* Panel altı reklam alanı: minHeight rezerve, skeleton'lı, CLS-safe */}
+          <div className="sdp-ad">
+            <AdBanner slot="DETAIL_PANEL_SLOT" format="auto" minHeight={250} />
+          </div>
         </div>
 
         <footer className="sdp-footer">

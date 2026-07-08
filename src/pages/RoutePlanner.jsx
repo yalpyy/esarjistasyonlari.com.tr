@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -7,7 +7,12 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import LocationSearchInput from '../components/tools/LocationSearchInput';
 
-const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving';
+// Birincil: FOSSGIS (osm.org'un kullandığı, güvenilir sunucu)
+// Yedek: OSRM demo sunucusu (zaman zaman yanıt vermeyebiliyor)
+const OSRM_HOSTS = [
+  'https://routing.openstreetmap.de/routed-car/route/v1/driving',
+  'https://router.project-osrm.org/route/v1/driving',
+];
 
 const TILE_URLS = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -74,43 +79,60 @@ export default function RoutePlanner() {
     setRoute(null);
   };
 
-  const calculateRoute = async () => {
+  const calculateRoute = useCallback(async () => {
     if (!from || !to) return;
     setLoading(true);
     setError('');
     setRoute(null);
 
-    try {
-      const coords = `${from.lng},${from.lat};${to.lng},${to.lat}`;
-      const params = new URLSearchParams({
-        overview: 'full',
-        geometries: 'geojson',
-        alternatives: 'false',
-        steps: 'false',
-      });
-      const res = await fetch(`${OSRM_URL}/${coords}?${params}`);
-      if (!res.ok) throw new Error(`OSRM ${res.status}`);
-      const data = await res.json();
+    const coords = `${from.lng},${from.lat};${to.lng},${to.lat}`;
+    const params = new URLSearchParams({
+      overview: 'full',
+      geometries: 'geojson',
+      alternatives: 'false',
+      steps: 'false',
+    });
 
-      const r = data.routes?.[0];
-      if (!r) throw new Error('no-route');
+    let lastError = null;
 
-      setRoute({
-        // GeoJSON [lng, lat] → Leaflet [lat, lng]
-        positions: r.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
-        distance: r.distance, // metre
-        duration: r.duration, // saniye
-      });
-    } catch {
-      setError(
-        isTr
-          ? 'Rota hesaplanamadı. Lütfen farklı konumlar deneyin veya biraz sonra tekrar deneyin.'
-          : 'Route could not be calculated. Try different locations or retry shortly.'
-      );
-    } finally {
-      setLoading(false);
+    // Sunucular sırayla denenir; biri yanıt vermezse diğerine geçilir
+    for (const host of OSRM_HOSTS) {
+      try {
+        const res = await fetch(`${host}/${coords}?${params}`);
+        if (!res.ok) throw new Error(`OSRM ${res.status}`);
+        const data = await res.json();
+
+        const r = data.routes?.[0];
+        if (!r) throw new Error('no-route');
+
+        setRoute({
+          // GeoJSON [lng, lat] → Leaflet [lat, lng]
+          positions: r.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+          distance: r.distance, // metre
+          duration: r.duration, // saniye
+        });
+        setLoading(false);
+        return;
+      } catch (err) {
+        lastError = err;
+      }
     }
-  };
+
+    console.warn('Rota hesaplanamadı:', lastError);
+    setError(
+      isTr
+        ? 'Rota hesaplanamadı. Lütfen farklı konumlar deneyin veya biraz sonra tekrar deneyin.'
+        : 'Route could not be calculated. Try different locations or retry shortly.'
+    );
+    setLoading(false);
+  }, [from, to, isTr]);
+
+  // İki konum da seçildiğinde rota otomatik hesaplanır
+  useEffect(() => {
+    if (from && to) {
+      calculateRoute();
+    }
+  }, [from, to, calculateRoute]);
 
   const stats = useMemo(() => {
     if (!route) return null;
@@ -177,7 +199,7 @@ export default function RoutePlanner() {
           >
             {loading
               ? (isTr ? 'Hesaplanıyor…' : 'Calculating…')
-              : (isTr ? 'Rota Oluştur' : 'Create Route')}
+              : (isTr ? 'Rotayı Yenile' : 'Recalculate Route')}
           </button>
 
           {error && <p className="route-error" role="alert">{error}</p>}

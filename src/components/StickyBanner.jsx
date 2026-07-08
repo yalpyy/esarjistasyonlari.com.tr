@@ -9,6 +9,7 @@ export default function StickyBanner() {
           format="auto"
           responsive={false}
           style={{ width: 430, height: 49 }}
+          minHeight={49}
         />
       </div>
     </div>
