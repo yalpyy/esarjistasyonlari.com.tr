@@ -1,0 +1,79 @@
+/* ===== TEMA SİSTEMİ =====
+ * Koyu tema, index.css'teki :root değişkenleri olarak kalır (varsayılan).
+ * Light tema, html[data-theme='light'] altında aynı değişkenleri ezer.
+ * Buradaki değişken listesi index.css :root bloğu ile birebir eşleşir.
+ */
+
+html[data-theme='light'] {
+  --bg-primary: #f4f6f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef1ef;
+  --bg-card: #ffffff;
+  --bg-hover: #e8ecea;
+  --text-primary: #16211b;
+  --text-secondary: #52605a;
+  --text-muted: #8a948f;
+  --accent: #16a34a;
+  --accent-hover: #15803d;
+  --accent-glow: rgba(22, 163, 74, 0.22);
+  --border: #dde3e0;
+  --border-light: #cbd3cf;
+  --danger: #dc2626;
+  --info: #2563eb;
+  --shadow: 0 4px 20px rgba(15, 23, 42, 0.1);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* Tema geçişi yumuşak olsun; sadece renk özellikleri animasyonlansın
+ * ki layout (CLS) etkilenmesin. */
+body,
+.app-header,
+.sidebar,
+.station-card,
+.app-footer {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* ===== TEMA TOGGLE BUTONU ===== */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border, #333);
+  background: transparent;
+  color: var(--text-primary, #fff);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+  transform: rotate(15deg);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent, #22c55e);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .app-header,
+  .sidebar,
+  .station-card,
+  .app-footer,
+  .theme-toggle {
+    transition: none;
+  }
+}

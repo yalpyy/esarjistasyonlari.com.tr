@@ -10,6 +10,19 @@
     <meta name="keywords" content="elektrikli araç şarj istasyonu, EV şarj, şarj noktası, ZES, Eşarj, Trugo, DC hızlı şarj, AC şarj, Türkiye şarj istasyonları, şarj ücreti, şarj haritası" />
     <meta name="author" content="esarjistasyonu.com.tr" />
     <meta name="theme-color" content="#22c55e" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://esarjistasyonu.com.tr/" />

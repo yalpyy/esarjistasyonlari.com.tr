@@ -4,6 +4,7 @@ import MapContainerComponent from '../components/MapContainer';
 import Sidebar from '../components/Sidebar';
 import FullScreenAd from '../components/FullScreenAd';
 import DirectionsModal from '../components/DirectionsModal';
+import StationDetailPanel from '../components/StationDetailPanel';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useStations } from '../hooks/useStations';
 import { useAdInterstitial } from '../hooks/useAdInterstitial';
@@ -150,6 +151,12 @@ export default function HomePage() {
         stations={stations}
         selectedStation={selectedStation}
         onStationClick={handleStationClick}
+      />
+
+      <StationDetailPanel
+        station={selectedStation}
+        onClose={() => setSelectedStation(null)}
+        onGetDirections={handleGetDirections}
       />
 
       {showAd && <FullScreenAd onClose={closeAd} />}

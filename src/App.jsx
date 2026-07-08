@@ -16,6 +16,7 @@ import RangeCalculator from './pages/RangeCalculator';
 import KvkkPage from './pages/KvkkPage';
 import StationDetail from './pages/StationDetail';
 import NotFound from './pages/NotFound';
+import { ThemeProvider } from './context/ThemeContext';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import './App.css';
@@ -53,10 +54,12 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppLayout />
-      <Analytics />
-      <SpeedInsights />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppLayout />
+        <Analytics />
+        <SpeedInsights />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

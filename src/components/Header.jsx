@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
   const { t, i18n } = useTranslation();
@@ -25,6 +26,7 @@ export default function Header() {
         <button className="lang-toggle" onClick={toggleLang}>
           {i18n.language === 'tr' ? 'EN' : 'TR'}
         </button>
+        <ThemeToggle />
       </nav>
     </header>
   );

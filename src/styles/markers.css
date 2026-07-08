@@ -1,0 +1,151 @@
+/* ===== İSTASYON PIN'LERİ (L.divIcon) ===== */
+
+/* Leaflet'in divIcon'a eklediği varsayılan kutuyu sıfırla */
+.ev-pin-wrapper,
+.ev-cluster-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.ev-pin {
+  position: relative;
+  width: 36px;
+  height: 46px;
+  /* Sabit boyut: layout shift / titreme yok */
+  will-change: transform;
+  transition: transform 0.18s ease;
+}
+
+.ev-pin svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 2;
+}
+
+.ev-pin__body {
+  fill: var(--pin-color);
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 1.5;
+}
+
+.ev-pin__disc {
+  fill: rgba(255, 255, 255, 0.92);
+}
+
+.ev-pin__bolt {
+  fill: var(--pin-color);
+}
+
+/* Renk varyantları */
+.ev-pin--ac {
+  --pin-color: #3b82f6; /* mavi */
+  --pin-glow: rgba(59, 130, 246, 0.55);
+}
+
+.ev-pin--dc {
+  --pin-color: #f97316; /* turuncu */
+  --pin-glow: rgba(249, 115, 22, 0.55);
+}
+
+/* Parlama halkası: pin tabanında nabız gibi genişler */
+.ev-pin__halo {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 18px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--pin-glow);
+  filter: blur(2px);
+  animation: ev-pin-pulse 2.2s ease-out infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* DC (hızlı) istasyonlar daha iddialı parlasın */
+.ev-pin--dc .ev-pin__halo {
+  animation-duration: 1.6s;
+}
+
+.ev-pin--dc svg {
+  filter: drop-shadow(0 0 6px var(--pin-glow));
+}
+
+.ev-pin--ac svg {
+  filter: drop-shadow(0 0 4px var(--pin-glow));
+}
+
+/* Seçili pin */
+.ev-pin--selected {
+  transform: scale(1.18);
+  z-index: 3;
+}
+
+.ev-pin--selected svg {
+  filter: drop-shadow(0 0 10px var(--pin-glow));
+}
+
+@keyframes ev-pin-pulse {
+  0% {
+    transform: translateX(-50%) scale(0.6);
+    opacity: 0.9;
+  }
+  70% {
+    transform: translateX(-50%) scale(2.4);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* ===== CLUSTER BALONCUKLARI ===== */
+
+.ev-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+  cursor: pointer;
+}
+
+.ev-cluster:hover {
+  transform: scale(1.08);
+}
+
+.ev-cluster--ac {
+  background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb);
+}
+
+.ev-cluster--dc {
+  background: radial-gradient(circle at 30% 30%, #fb923c, #ea580c);
+}
+
+.ev-cluster--sm { font-size: 0.8rem; }
+.ev-cluster--md { font-size: 0.9rem; }
+.ev-cluster--lg { font-size: 1rem; }
+
+/* Erişilebilirlik: hareket azaltma tercihine saygı */
+@media (prefers-reduced-motion: reduce) {
+  .ev-pin__halo {
+    animation: none;
+    opacity: 0.4;
+  }
+  .ev-pin,
+  .ev-cluster {
+    transition: none;
+  }
+}
