@@ -33,6 +33,7 @@ const STATIC_ROUTES = [
   { path: '/sozluk',             changefreq: 'monthly', priority: '0.8' },
   { path: '/sehirler',           changefreq: 'monthly', priority: '0.8' },
   { path: '/menzil-hesaplayici', changefreq: 'monthly', priority: '0.8' },
+  { path: '/rota-planlayici', changefreq: 'monthly', priority: '0.8' },
   { path: '/blog',               changefreq: 'weekly',  priority: '0.7' },
   { path: '/hakkimizda',         changefreq: 'monthly', priority: '0.6' },
   { path: '/gizlilik-politikasi', changefreq: 'monthly', priority: '0.4' },

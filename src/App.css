@@ -924,7 +924,7 @@
 }
 
 .cookie-table th {
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   color: var(--text-primary, #fff);
   font-weight: 600;
 }
@@ -947,7 +947,7 @@
 }
 
 .guide-toc {
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border-radius: var(--radius, 12px);
   padding: 1.25rem;
   margin-bottom: 2rem;
@@ -976,7 +976,7 @@
 
 .guide-cta {
   text-align: center;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border-radius: var(--radius, 12px);
   padding: 2rem;
   margin-top: 2rem;
@@ -1020,7 +1020,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: none;
   color: var(--text-primary, #fff);
   padding: 1rem;
@@ -1114,7 +1114,7 @@
 }
 
 .not-found-btn--secondary {
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border, #333);
 }
 
@@ -1675,7 +1675,7 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.6rem;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border, #333);
   border-radius: 10px;
   text-decoration: none;
@@ -1744,7 +1744,7 @@
 .glossary-search {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border, #333);
   border-radius: 10px;
   color: var(--text-primary, #fff);
@@ -1801,7 +1801,7 @@
 
 .glossary-item {
   padding: 1rem;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border, #333);
   border-radius: var(--radius, 12px);
   transition: border-color 0.15s;
@@ -1842,7 +1842,7 @@
 
 .city-card {
   padding: 1rem;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border, #333);
   border-radius: var(--radius, 12px);
   transition: border-color 0.15s, transform 0.15s;
@@ -1895,7 +1895,7 @@
 .calculator-form,
 .calculator-results {
   padding: 1.25rem;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border, #333);
   border-radius: var(--radius, 12px);
 }
@@ -2185,7 +2185,7 @@
 
 .station-info-card {
   padding: 1.25rem;
-  background: var(--card-bg, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border, #333);
   border-radius: var(--radius, 12px);
 }

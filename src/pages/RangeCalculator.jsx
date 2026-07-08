@@ -1,18 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import vehicles from '../data/evVehicles.json';
+import RangeBarChart from '../components/tools/RangeBarChart';
 
-const PRESET_VEHICLES = [
-  { name: 'Togg T10X', batteryKwh: 88, consumption: 16.5 },
-  { name: 'Tesla Model 3 LR', batteryKwh: 75, consumption: 14.5 },
-  { name: 'Tesla Model Y LR', batteryKwh: 75, consumption: 16.0 },
-  { name: 'Hyundai Ioniq 5', batteryKwh: 77, consumption: 17.0 },
-  { name: 'Kia EV6', batteryKwh: 77, consumption: 17.2 },
-  { name: 'Volkswagen ID.4', batteryKwh: 77, consumption: 17.5 },
-  { name: 'BMW iX3', batteryKwh: 74, consumption: 18.5 },
-  { name: 'Skoda Enyaq iV 80', batteryKwh: 77, consumption: 17.8 },
-  { name: 'MG ZS EV', batteryKwh: 72, consumption: 17.9 },
-  { name: 'Ford Mustang Mach-E', batteryKwh: 88, consumption: 19.0 },
+const WEATHER_PRESETS = [
+  { key: 'cold', temp: -5, icon: '❄️', tr: 'Soğuk', en: 'Cold' },
+  { key: 'cool', temp: 10, icon: '🌥️', tr: 'Serin', en: 'Cool' },
+  { key: 'mild', temp: 22, icon: '☀️', tr: 'Ilıman', en: 'Mild' },
+  { key: 'hot', temp: 36, icon: '🔥', tr: 'Sıcak', en: 'Hot' },
 ];
 
 export default function RangeCalculator() {
@@ -24,6 +20,12 @@ export default function RangeCalculator() {
   const [soc, setSoc] = useState(80);
   const [temperature, setTemperature] = useState(20);
   const [speed, setSpeed] = useState('mixed');
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+
+  const brands = useMemo(
+    () => [...new Set(vehicles.map((v) => v.brand))],
+    []
+  );
 
   const results = useMemo(() => {
     // Base range (WLTP-like conditions)
@@ -45,6 +47,14 @@ export default function RangeCalculator() {
 
     const realRange = baseRange * tempFactor * speedFactor;
 
+    // Bar grafik: mevcut hava koşulunda her sürüş tipi için menzil
+    const rangeByStyle = Object.fromEntries(
+      Object.entries(speedFactors).map(([key, factor]) => [
+        key,
+        Math.round(baseRange * tempFactor * factor),
+      ])
+    );
+
     // Charging estimate (AC 11 kW, DC 50 kW, DC 150 kW from 20% to 80%)
     const chargeFromSocToFull = ((100 - soc) * batteryKwh) / 100;
     const ac11 = chargeFromSocToFull / 11;
@@ -54,6 +64,7 @@ export default function RangeCalculator() {
     return {
       baseRange: Math.round(baseRange),
       realRange: Math.round(realRange),
+      rangeByStyle,
       usableEnergy: usableEnergy.toFixed(1),
       chargeFromSocToFull: chargeFromSocToFull.toFixed(1),
       ac11: (ac11 * 60).toFixed(0),
@@ -62,9 +73,13 @@ export default function RangeCalculator() {
     };
   }, [batteryKwh, consumption, soc, temperature, speed]);
 
-  const applyPreset = (v) => {
-    setBatteryKwh(v.batteryKwh);
-    setConsumption(v.consumption);
+  const handleVehicleSelect = (id) => {
+    setSelectedVehicleId(id);
+    const v = vehicles.find((x) => x.id === id);
+    if (v) {
+      setBatteryKwh(v.batteryKwh);
+      setConsumption(v.consumption);
+    }
   };
 
   return (
@@ -79,18 +94,28 @@ export default function RangeCalculator() {
 
         <section className="calculator-wrapper">
           <div className="calculator-form">
-            <h2>{isTr ? 'Hazır Araç Seç' : 'Select Preset Vehicle'}</h2>
-            <div className="preset-grid">
-              {PRESET_VEHICLES.map((v) => (
-                <button
-                  key={v.name}
-                  className="preset-btn"
-                  onClick={() => applyPreset(v)}
-                >
-                  {v.name}
-                </button>
+            <h2>{isTr ? 'Aracınızı Seçin' : 'Select Your Vehicle'}</h2>
+            <select
+              className="vehicle-select"
+              value={selectedVehicleId}
+              onChange={(e) => handleVehicleSelect(e.target.value)}
+              aria-label={isTr ? 'Araç seç' : 'Select vehicle'}
+            >
+              <option value="">
+                {isTr ? '— Araç seçin veya değerleri elle girin —' : '— Select a vehicle or enter values manually —'}
+              </option>
+              {brands.map((brand) => (
+                <optgroup key={brand} label={brand}>
+                  {vehicles
+                    .filter((v) => v.brand === brand)
+                    .map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.brand} {v.model} · {v.batteryKwh} kWh
+                      </option>
+                    ))}
+                </optgroup>
               ))}
-            </div>
+            </select>
 
             <h2>{isTr ? 'Parametreler' : 'Parameters'}</h2>
 
@@ -127,6 +152,23 @@ export default function RangeCalculator() {
                 onChange={(e) => setSoc(Number(e.target.value))}
               />
             </label>
+
+            <div className="calc-field">
+              <span>{isTr ? 'Hava Durumu' : 'Weather'}</span>
+              <div className="weather-chips">
+                {WEATHER_PRESETS.map((w) => (
+                  <button
+                    key={w.key}
+                    type="button"
+                    className={`weather-chip ${temperature === w.temp ? 'active' : ''}`}
+                    onClick={() => setTemperature(w.temp)}
+                  >
+                    <span aria-hidden="true">{w.icon}</span>
+                    <span>{isTr ? w.tr : w.en}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <label className="calc-field">
               <span>{isTr ? 'Dış Sıcaklık (°C)' : 'Outside Temperature (°C)'}: {temperature}°C</span>
@@ -166,6 +208,16 @@ export default function RangeCalculator() {
 
           <div className="calculator-results">
             <h2>{isTr ? 'Sonuçlar' : 'Results'}</h2>
+
+            <RangeBarChart
+              bars={[
+                { key: 'city', label: isTr ? 'Şehir İçi' : 'City', km: results.rangeByStyle.city },
+                { key: 'mixed', label: isTr ? 'Karma' : 'Mixed', km: results.rangeByStyle.mixed },
+                { key: 'highway', label: isTr ? 'Otoyol' : 'Highway', km: results.rangeByStyle.highway },
+              ]}
+              activeKey={speed}
+              baseRange={results.baseRange}
+            />
 
             <div className="result-card result-card--primary">
               <span className="result-label">{isTr ? 'Gerçek Menzil' : 'Real-World Range'}</span>

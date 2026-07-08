@@ -43,6 +43,18 @@ const CARDS_TR = [
     text: 'CCS, Type 2, kWh... Tüm terimler açıklamalı sözlükte.',
     href: '/sozluk',
   },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <circle cx="6" cy="19" r="2.5" stroke="currentColor" strokeWidth="2" />
+        <circle cx="18" cy="5" r="2.5" stroke="currentColor" strokeWidth="2" />
+        <path d="M8.5 19H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    ),
+    title: 'Rota Planla',
+    text: 'Nereden nereye? Güzergahınızı çizin, yol üstündeki istasyonları görün.',
+    href: '/rota-planlayici',
+  },
 ];
 
 const CARDS_EN = [
@@ -69,6 +81,12 @@ const CARDS_EN = [
     title: 'EV Glossary',
     text: 'CCS, Type 2, kWh... All terms explained in one place.',
     href: '/sozluk',
+  },
+  {
+    icon: CARDS_TR[4].icon,
+    title: 'Plan a Route',
+    text: 'From A to B: draw your route and see stations along the way.',
+    href: '/rota-planlayici',
   },
 ];
 
