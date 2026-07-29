@@ -86,3 +86,19 @@ frontend'de sadece `VITE_SUPABASE_ANON_KEY` var.
 
 Kurallar `game.rules()` içinde tek yerde toplandı ve `src/game/geo.js` içindeki
 `RULES` ile eşleşmeli — birini değiştirirken diğerini unutma.
+
+## "Oyun şu an kapalı" diyorsa
+
+Vite ortam değişkenlerini **derleme anında** koda gömer, çalışma anında okumaz.
+Bunun iki pratik sonucu var:
+
+1. Vercel'e değişken eklemek mevcut dağıtımı değiştirmez — **yeniden deploy**
+   gerekir.
+2. Değişken hangi ortam için işaretliyse orada görünür. PR önizleme adresinde
+   çalışması için **Preview** de işaretli olmalı; yalnızca Production işaretliyse
+   önizleme kapalı kalır.
+
+Kapalı ekranı artık hangi değişkenin eksik olduğunu yazıyor (değerleri değil).
+Tarayıcı konsolunda da aynı uyarı var.
+
+Değerler panele tırnak içinde yapıştırılmışsa istemci bunu temizliyor.

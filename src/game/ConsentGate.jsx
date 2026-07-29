@@ -3,7 +3,7 @@ import {
   getSession, onAuthChange, signInWithEmail, signInWithGoogle,
   getProfile, setConsent
 } from './api';
-import { isGameConfigured } from '../lib/supabase';
+import { isGameConfigured, configDiagnostics } from '../lib/supabase';
 
 /**
  * Oyuna girişten önceki iki kapı:
@@ -45,6 +45,7 @@ export default function ConsentGate({ children }) {
     return (
       <Screen title="Oyun şu an kapalı">
         <p>Oyun sunucusu yapılandırılmamış. Kısa süre içinde tekrar dene.</p>
+        <SetupHint />
       </Screen>
     );
   }
@@ -141,6 +142,46 @@ export default function ConsentGate({ children }) {
   if (!profile) return <Screen title="Profil hazırlanıyor…" />;
 
   return children({ session, profile, refreshProfile: async () => setProfile(await getProfile()) });
+}
+
+/**
+ * "Kapalı" ekranının teşhis kısmı.
+ *
+ * Bu blok olmadan mesaj çıkmaz sokak: kurulumu yapan kişi değişkenleri
+ * eklediğini bilir ama neden hâlâ kapalı olduğunu göremez. En sık sebep,
+ * değişkenlerin eklenmesi ama yeniden deploy edilmemesi — Vite değerleri
+ * derleme anında gömüyor.
+ *
+ * Anahtar veya URL'nin kendisi YAZILMIYOR, yalnızca var/yok bilgisi.
+ */
+function SetupHint() {
+  const { missing, hasUrl, hasAnonKey, urlLooksValid, anonKeyLooksValid } = configDiagnostics;
+
+  return (
+    <div className="setup-hint">
+      <p className="hint-title">Bu derlemede eksik olan:</p>
+      <ul>
+        <li>
+          <code>VITE_SUPABASE_URL</code>{' '}
+          {!hasUrl ? '— tanımlı değil' : urlLooksValid ? '— tamam' : '— tanımlı ama biçimi beklenmedik'}
+        </li>
+        <li>
+          <code>VITE_SUPABASE_ANON_KEY</code>{' '}
+          {!hasAnonKey ? '— tanımlı değil' : anonKeyLooksValid ? '— tamam' : '— tanımlı ama JWT gibi görünmüyor'}
+        </li>
+      </ul>
+
+      {missing.length > 0 && (
+        <p className="hint-note">
+          Değişkenleri Vercel'e eklediysen bu derleme onlardan önce alınmış olabilir.
+          Vite değerleri <b>derleme anında</b> koda gömüyor, çalışma anında okumuyor —
+          eklendikten sonra <b>yeniden deploy</b> gerekiyor. Ayrıca değişkenin
+          hangi ortam için işaretlendiğine bak: PR önizleme adresinde görünmesi
+          için <b>Preview</b> de işaretli olmalı.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function Screen({ title, lead, children }) {

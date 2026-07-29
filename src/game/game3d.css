@@ -227,3 +227,29 @@
 @media (prefers-reduced-motion: reduce) {
   .player-dot .pulse { animation: none; }
 }
+
+/* ---------- Kurulum teşhisi ("Oyun şu an kapalı" ekranı) ---------- */
+
+.setup-hint {
+  margin-top: 1rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(255, 183, 77, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 183, 77, 0.06);
+  text-align: left;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.setup-hint .hint-title { margin: 0 0 0.4rem; color: #FFB74D; font-weight: 600; }
+.setup-hint ul { margin: 0; padding-left: 1.1rem; }
+.setup-hint li { margin-bottom: 0.2rem; }
+.setup-hint code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.1rem 0.3rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+}
+.setup-hint .hint-note {
+  margin: 0.6rem 0 0;
+  color: rgba(238, 242, 245, 0.65);
+}
