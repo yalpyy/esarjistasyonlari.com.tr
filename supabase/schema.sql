@@ -84,6 +84,31 @@ create table if not exists public.profiles (
   created_at          timestamptz not null default now()
 );
 
+/**
+ * Eksik sütunları tamamla.
+ *
+ * `create table if not exists` mevcut tabloyu OLDUĞU GİBİ bırakır. Supabase
+ * projelerinde çoğu zaman "User Management Starter" şablonundan gelen bir
+ * public.profiles tablosu zaten vardır (id, username, full_name, avatar_url…).
+ * O durumda yukarıdaki create sessizce atlanır ve şemanın geri kalanı
+ * "column last_lat does not exist" ile patlar.
+ *
+ * Aşağıdaki blok hem o durumu hem de yarım kalmış bir kurulumu onarır ve
+ * şemayı tekrar tekrar çalıştırılabilir yapar.
+ */
+alter table public.profiles
+  add column if not exists nickname            text,
+  add column if not exists balance             numeric(14,2) not null default 12000,
+  add column if not exists level               int           not null default 1,
+  add column if not exists xp                  int           not null default 0,
+  add column if not exists location_consent_at timestamptz,
+  add column if not exists banned              boolean       not null default false,
+  add column if not exists last_lat            double precision,
+  add column if not exists last_lng            double precision,
+  add column if not exists last_fix_at         timestamptz,
+  add column if not exists last_collected_at   timestamptz not null default now(),
+  add column if not exists created_at          timestamptz not null default now();
+
 comment on column public.profiles.last_lat is
   'assert_fix() tarafından doğrulanmış son konum; hız kontrolünün referansı.';
 
@@ -98,6 +123,11 @@ create table if not exists public.discoveries (
   created_at timestamptz not null default now(),
   primary key (user_id, cell)
 );
+
+alter table public.discoveries
+  add column if not exists lat        double precision,
+  add column if not exists lng        double precision,
+  add column if not exists created_at timestamptz not null default now();
 
 create index if not exists discoveries_user_bbox_idx
   on public.discoveries (user_id, lat, lng);
@@ -117,6 +147,11 @@ create table if not exists public.stations (
   last_collected_at timestamptz not null default now()
 );
 
+alter table public.stations
+  add column if not exists power             int,
+  add column if not exists created_at        timestamptz not null default now(),
+  add column if not exists last_collected_at timestamptz not null default now();
+
 create index if not exists stations_bbox_idx on public.stations (lat, lng);
 create index if not exists stations_owner_idx on public.stations (owner);
 
@@ -130,6 +165,10 @@ create table if not exists public.claims (
   expires_at timestamptz not null,
   collected_at timestamptz not null default now()
 );
+
+alter table public.claims
+  add column if not exists claimed_at   timestamptz not null default now(),
+  add column if not exists collected_at timestamptz not null default now();
 
 create index if not exists claims_owner_idx on public.claims (owner);
 create index if not exists claims_bbox_idx on public.claims (lat, lng);
@@ -153,6 +192,11 @@ create table if not exists public.ocm_stations (
   updated_at timestamptz not null default now()
 );
 
+alter table public.ocm_stations
+  add column if not exists title      text,
+  add column if not exists power      int,
+  add column if not exists updated_at timestamptz not null default now();
+
 create index if not exists ocm_stations_bbox_idx on public.ocm_stations (lat, lng);
 
 -- =============================================================================
@@ -164,6 +208,33 @@ alter table public.discoveries  enable row level security;
 alter table public.stations     enable row level security;
 alter table public.claims       enable row level security;
 alter table public.ocm_stations enable row level security;
+
+/**
+ * Devralınan politikaları temizle.
+ *
+ * Bu tablolar oyunun kontrolünde. Supabase "User Management Starter"
+ * şablonundan gelen `Public profiles are viewable by everyone.` gibi izin
+ * veren bir SELECT politikası kalırsa, politikalar OR'landığı için aşağıdaki
+ * kısıtlayıcı politikalar HİÇBİR İŞE YARAMAZ.
+ *
+ * Bu teorik değil: profiles tablosunda last_lat/last_lng var. Kalan izin
+ * verici bir politika, her oyuncunun son GPS konumunu herkese açık hale
+ * getirir — rıza metninde verdiğimiz sözün tam tersi. O yüzden adı ne olursa
+ * olsun mevcut politikalar düşürülüp yalnızca buradakiler kuruluyor.
+ */
+do $$
+declare pol record;
+begin
+  for pol in
+    select policyname, tablename
+      from pg_policies
+     where schemaname = 'public'
+       and tablename in ('profiles', 'discoveries', 'stations', 'claims', 'ocm_stations')
+  loop
+    execute format('drop policy %I on public.%I', pol.policyname, pol.tablename);
+  end loop;
+end;
+$$;
 
 drop policy if exists profiles_select_own on public.profiles;
 create policy profiles_select_own on public.profiles

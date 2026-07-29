@@ -2,8 +2,19 @@ set client_min_messages = notice;
 do $$
 declare
   alice uuid := '11111111-1111-1111-1111-111111111111';
+  bob   uuid := '22222222-2222-2222-2222-222222222222';
   msg text;
 begin
+  -- Testin kendi verisini kurması ŞART: boş tabloda "başkasının profili
+  -- görünmüyor" kontrolü satır olmadığı için yanlışlıkla geçiyordu.
+  insert into auth.users (id, email) values (alice, 'a@test.tr')
+    on conflict (id) do nothing;
+  insert into auth.users (id, email) values (bob, 'b@test.tr')
+    on conflict (id) do nothing;
+  if (select count(*) from public.profiles where id in (alice, bob)) <> 2 then
+    raise exception 'FAIL: test verisi kurulamadı (profil tetikleyicisi?)';
+  end if;
+
   perform set_config('request.jwt.claim.sub', alice::text, false);
 
   -- authenticated rolüne geç: gerçek istemcinin yetkisi bu
@@ -58,7 +69,7 @@ begin
   raise notice '  OK   takma ad güncellenebiliyor (izinli tek sütun)';
 
   -- Başkasının profili görünmemeli
-  perform set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+  perform set_config('request.jwt.claim.sub', bob::text, false);
   if exists (select 1 from public.profiles where id = alice) then
     raise exception 'FAIL: başka kullanıcının profili okunabiliyor';
   end if;

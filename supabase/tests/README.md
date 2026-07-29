@@ -26,3 +26,27 @@ seviye, ban, istasyon, keşif ve OCM ayna tablosu.
 
 Not: testler `client_min_messages = notice` ile çalışır; NOTICE bastırılırsa
 başarılı koşu sessiz görünür ve "çıktı yok" yanlışlıkla "test yok" sanılır.
+
+## Sınanan kurulum senaryoları
+
+Şema dört durumda da hatasız kurulup testleri geçmeli:
+
+| Senaryo | Neden önemli |
+|---|---|
+| Bomboş proje | Temel durum. |
+| Mevcut `public.profiles` (Supabase "User Management Starter") | `create table if not exists` mevcut tabloyu atlar; eksik sütunlar `alter table ... add column if not exists` ile tamamlanmazsa şema `column last_lat does not exist` ile patlar. |
+| Şemayı ikinci/üçüncü kez çalıştırmak | Tekrar çalıştırılabilir olmalı; kullanıcı düzeltme sonrası yeniden yapıştırıyor. |
+| Devralınan izin verici politikalar | Starter'ın `Public profiles are viewable by everyone.` politikası kalırsa, politikalar OR'landığı için kısıtlayıcı politikalar işe yaramaz ve **her oyuncunun son GPS konumu herkese açılır**. Şema bu tablolardaki eski politikaları düşürüyor. |
+
+## Testlerde dikkat
+
+`02-rls.test.sql` kendi kullanıcılarını kendisi oluşturur. Bu şart: boş tabloda
+"başkasının profili görünmüyor" kontrolü satır olmadığı için yanlışlıkla geçiyordu.
+
+Negatif kontrol — testin gerçekten bir şey ölçtüğünü doğrulamak için:
+
+```sql
+create policy "leak" on public.profiles for select using (true);
+-- 02-rls.test.sql artık FAIL vermeli
+drop policy "leak" on public.profiles;
+```
