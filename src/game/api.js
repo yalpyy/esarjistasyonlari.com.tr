@@ -32,20 +32,101 @@ export function onAuthChange(handler) {
   return () => data.subscription.unsubscribe();
 }
 
+/**
+ * Giriş sonrası dönülecek adres.
+ *
+ * Varsayılan olarak sayfanın kendi kaynağı kullanılır; böylece Vercel önizleme
+ * dağıtımları da kendi adresine döner. VITE_SITE_URL tanımlıysa o kazanır —
+ * apex/www karışıklığında (esarjistasyonu.com.tr vs www.esarjistasyonu.com.tr)
+ * tek bir kanonik adrese sabitlemek için.
+ *
+ * DİKKAT: Supabase bu adresi yalnızca panelde izin listesindeyse kullanır.
+ * Listede yoksa sessizce yok sayıp Site URL'e düşer — varsayılanı
+ * http://localhost:3000 olduğu için giriş bağlantısı localhost'a gider.
+ * Ayar yeri: Authentication -> URL Configuration.
+ */
+export function authRedirectUrl() {
+  const base = (import.meta.env.VITE_SITE_URL || '').trim().replace(/\/+$/, '');
+  return `${base || window.location.origin}/oyun`;
+}
+
+/**
+ * E-posta ile giriş başlatır.
+ *
+ * Gönderilen e-posta hem bağlantı hem 6 haneli kod içerebilir (şablona bağlı).
+ * Kod yolu tercih edilir çünkü bağlantı kırılgan: kurumsal e-posta tarayıcıları
+ * (Outlook Safe Links vb.) tek kullanımlık jetonu kullanıcı tıklamadan tüketiyor
+ * ve bağlantı `access_denied / otp_expired` veriyor. Kod yolunda yönlendirme
+ * adresi hiç devreye girmiyor.
+ */
 export async function signInWithEmail(email) {
   if (!supabase) return fail('not_configured');
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${window.location.origin}/oyun` }
+    options: { emailRedirectTo: authRedirectUrl() }
   });
   return error ? fail(error.message) : { ok: true };
+}
+
+/** E-postadaki 6 haneli kodu doğrular ve oturumu açar. */
+export async function verifyEmailCode(email, code) {
+  if (!supabase) return fail('not_configured');
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: String(code).trim(),
+    type: 'email'
+  });
+  if (error) return fail(error.message);
+  return { ok: true, session: data.session };
+}
+
+/**
+ * Supabase'in adres satırına bıraktığı giriş hatasını okur.
+ *
+ * Bağlantı başarısız olduğunda hata sayfada değil, URL parçasında (#) geliyor:
+ *   #error=access_denied&error_code=otp_expired&error_description=...
+ * Okunmazsa kullanıcı sadece giriş ekranını yeniden görür ve neden
+ * giremediğini asla anlayamaz. Okuduktan sonra adres temizleniyor ki
+ * yenilemede hata tekrar görünmesin.
+ */
+export function readAuthError() {
+  if (typeof window === 'undefined') return null;
+
+  const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const fromQuery = new URLSearchParams(window.location.search);
+  const src = fromHash.get('error') || fromHash.get('error_code') ? fromHash : fromQuery;
+
+  const error = src.get('error');
+  const code = src.get('error_code');
+  if (!error && !code) return null;
+
+  const description = (src.get('error_description') || '').replace(/\+/g, ' ');
+
+  window.history.replaceState({}, '', window.location.pathname);
+
+  return { error, code, description };
+}
+
+/** Giriş hatasını Türkçe ve eyleme dönük anlatır. */
+export function authErrorText({ code, error, description } = {}) {
+  switch (code) {
+    case 'otp_expired':
+      return 'Giriş bağlantısının süresi dolmuş veya bağlantı zaten kullanılmış. ' +
+             'Kurumsal e-posta filtreleri bağlantıyı sen tıklamadan açıp tüketebiliyor — ' +
+             'bunun yerine e-postadaki 6 haneli kodu kullan.';
+    case 'access_denied':
+      return 'Giriş reddedildi. Bağlantı geçersiz ya da kullanılmış; ' +
+             'yeni bir kod iste ve e-postadaki 6 haneli kodu gir.';
+    default:
+      return description || error || 'Giriş tamamlanamadı.';
+  }
 }
 
 export async function signInWithGoogle() {
   if (!supabase) return fail('not_configured');
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}/oyun` }
+    options: { redirectTo: authRedirectUrl() }
   });
   return error ? fail(error.message) : { ok: true };
 }

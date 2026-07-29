@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   getSession, onAuthChange, signInWithEmail, signInWithGoogle,
-  getProfile, setConsent
+  getProfile, setConsent, authRedirectUrl,
+  verifyEmailCode, readAuthError, authErrorText
 } from './api';
 import { isGameConfigured, configDiagnostics } from '../lib/supabase';
 
@@ -22,9 +23,16 @@ export default function ConsentGate({ children }) {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [code, setCode] = useState('');
 
   useEffect(() => {
     let alive = true;
+
+    // Bağlantıyla giriş başarısızsa hata adres satırında geliyor; okunmazsa
+    // kullanıcı sadece giriş ekranını yeniden görüp neden giremediğini bilemez.
+    const authErr = readAuthError();
+    if (authErr) setErr(authErrorText(authErr));
+
     getSession().then((s) => {
       if (!alive) return;
       setSession(s);
@@ -61,7 +69,9 @@ export default function ConsentGate({ children }) {
           onClick={async () => {
             setBusy(true);
             const r = await signInWithGoogle();
-            if (!r.ok) setErr('Google girişi başarısız.');
+            // Gerçek hatayı göster: "başarısız" demek teşhis etmeyi imkânsız
+            // kılıyordu (sağlayıcı kapalı mı, redirect izinli mi, bilinmiyor).
+            if (!r.ok) setErr(`Google girişi başarısız: ${r.reason}`);
             setBusy(false);
           }}
           disabled={busy}
@@ -72,7 +82,60 @@ export default function ConsentGate({ children }) {
         <div className="divider"><span>veya</span></div>
 
         {sent ? (
-          <p className="ok">Giriş bağlantısı <b>{email}</b> adresine gönderildi. Postanı kontrol et.</p>
+          <>
+            <p className="ok"><b>{email}</b> adresine gönderdik. Postanı kontrol et.</p>
+
+            {/* Kod yolu birincil: bağlantı, kurumsal e-posta tarayıcıları
+                jetonu önceden tükettiği için access_denied verebiliyor.
+                Kodda yönlendirme adresi hiç devreye girmiyor. */}
+            <label className="code-label" htmlFor="otp">E-postadaki 6 haneli kodu gir</label>
+            <input
+              id="otp"
+              className="game-input code-input"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={8}
+              placeholder="000000"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            />
+            <button
+              className="game-btn primary"
+              disabled={busy || code.length < 6}
+              onClick={async () => {
+                setBusy(true);
+                setErr(null);
+                const r = await verifyEmailCode(email.trim(), code);
+                if (!r.ok) setErr(`Kod doğrulanamadı: ${r.reason}`);
+                setBusy(false);
+              }}
+            >
+              Kodla giriş yap
+            </button>
+
+            <button
+              className="game-btn ghost"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setErr(null);
+                const r = await signInWithEmail(email.trim());
+                if (!r.ok) setErr(`Tekrar gönderilemedi: ${r.reason}`);
+                setCode('');
+                setBusy(false);
+              }}
+            >
+              Yeni kod gönder
+            </button>
+
+            <p className="hint-note">
+              E-postadaki bağlantıya da tıklayabilirsin; o yol
+              <code>{authRedirectUrl()}</code> adresine döner. Bağlantı
+              "access denied" veriyorsa kodu kullan — kurumsal e-posta
+              filtreleri bağlantıyı sen tıklamadan açıp tüketebiliyor.
+            </p>
+          </>
         ) : (
           <>
             <input
@@ -91,7 +154,7 @@ export default function ConsentGate({ children }) {
                 setErr(null);
                 const r = await signInWithEmail(email.trim());
                 if (r.ok) setSent(true);
-                else setErr('Bağlantı gönderilemedi. Adresi kontrol et.');
+                else setErr(`Bağlantı gönderilemedi: ${r.reason}`);
                 setBusy(false);
               }}
             >

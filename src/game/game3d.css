@@ -249,7 +249,33 @@
   border-radius: 5px;
   font-size: 0.75rem;
 }
-.setup-hint .hint-note {
+.hint-note {
   margin: 0.6rem 0 0;
   color: rgba(238, 242, 245, 0.65);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  text-align: left;
+}
+.hint-note code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.1rem 0.3rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
+/* ---------- Kod ile giriş ---------- */
+
+.code-label {
+  display: block;
+  margin: 0.9rem 0 0.35rem;
+  font-size: 0.78rem;
+  color: rgba(238, 242, 245, 0.7);
+  text-align: left;
+}
+.code-input {
+  font-size: 1.4rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
