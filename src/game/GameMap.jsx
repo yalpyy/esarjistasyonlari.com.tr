@@ -3,7 +3,8 @@ import { useEffect, useRef } from 'react';
 // içe aktarma şart (`import maplibregl from ...` build'i kırıyor).
 import { Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { addFogLayers, updateFog, addBuildings } from './fog3d';
+import { addFogLayers, updateFog, pulseEdge, FOG_LAYER } from './fog3d';
+import { addSky, addLighting, addBuildings, addPillars, updatePillars } from './scene';
 import { circlePolygon, RULES } from './geo';
 
 /**
@@ -15,10 +16,11 @@ import { circlePolygon, RULES } from './geo';
  * (React.lazy) ki normal ziyaretçi bu paketi indirmesin.
  *
  * Karo kaynağı: OpenFreeMap — ücretsiz, anahtar istemiyor, OSM verisi.
- * Yoğun trafikte MapTiler/Protomaps'e geçmek tek satır (STYLE_URL).
+ * `styleUrl` prop'u ile değiştirilebilir (MapTiler/Protomaps'e geçiş ya da
+ * karo sunucusuna çıkamayan ortamlarda görsel test için).
  */
 
-const STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
+export const STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 
 const SRC = { stations: 'stations-src', range: 'range-src' };
 
@@ -28,6 +30,7 @@ export default function GameMap({
   stations = [],
   buildMode = null,        // 'AC' | 'DC' | null
   followPlayer = true,
+  styleUrl = STYLE_URL,
   onMapTap,                // ({lat,lng}) => void
   onStationTap,            // (station) => void
   onReady                  // (map) => void
@@ -38,6 +41,7 @@ export default function GameMap({
   const readyRef = useRef(false);
   const followRef = useRef(followPlayer);
   const handlers = useRef({ onMapTap, onStationTap });
+  const prevCellCount = useRef(0);
 
   handlers.current = { onMapTap, onStationTap };
   followRef.current = followPlayer;
@@ -46,12 +50,13 @@ export default function GameMap({
   useEffect(() => {
     const map = new MapLibreMap({
       container: holder.current,
-      style: STYLE_URL,
+      style: styleUrl,
       center: [28.9784, 41.0082],   // konum gelene kadar İstanbul
       zoom: 15.5,
-      pitch: 55,                    // 3B görünüm
+      pitch: 60,                    // 3B görünüm
       bearing: -20,
       antialias: true,
+      maxPitch: 75,
       attributionControl: { compact: true }
     });
     mapRef.current = map;
@@ -62,9 +67,17 @@ export default function GameMap({
     map.on('load', () => {
       readyRef.current = true;
 
-      addBuildings(map);
+      // Sıra önemli: sis katmanları önce kurulmalı ki binalar ve sütunlar
+      // `beforeId: FOG_LAYER` ile sisin ALTINA yerleşebilsin.
       addFogLayers(map);
+      addSky(map);
+      addLighting(map);
+      addBuildings(map);
+      addPillars(map);
       updateFog(map, cells);
+      updatePillars(map, stations);
+
+      const beforeFog = map.getLayer(FOG_LAYER) ? FOG_LAYER : undefined;
 
       // Kurulum yarıçapı
       map.addSource(SRC.range, { type: 'geojson', data: emptyFC() });
@@ -73,33 +86,27 @@ export default function GameMap({
         type: 'fill',
         source: SRC.range,
         paint: { 'fill-color': '#00E676', 'fill-opacity': 0.12 }
-      });
+      }, beforeFog);
       map.addLayer({
         id: 'build-range-line',
         type: 'line',
         source: SRC.range,
         paint: { 'line-color': '#00E676', 'line-width': 1.5, 'line-opacity': 0.6 }
-      });
+      }, beforeFog);
 
-      // İstasyonlar — dikey sütun olarak, 3B'de uzaktan görünsün
+      // Tıklama hedefi ve etiketler için nokta kaynağı. Sütunlar
+      // fill-extrusion olduğu için isabetli tıklama alanı olarak bu kullanılıyor.
       map.addSource(SRC.stations, { type: 'geojson', data: emptyFC() });
       map.addLayer({
-        id: 'stations-pillar',
+        id: 'stations-hit',
         type: 'circle',
         source: SRC.stations,
         paint: {
-          'circle-radius': ['case', ['==', ['get', 'kind'], 'real'], 9, 7],
-          'circle-color': [
-            'case',
-            ['==', ['get', 'kind'], 'real'], '#FFB74D',
-            ['==', ['get', 'power'], 150], '#00B0FF',
-            '#00E676'
-          ],
-          'circle-stroke-width': ['case', ['get', 'mine'], 3, 1],
-          'circle-stroke-color': '#0b0d0f',
-          'circle-opacity': 0.95
+          'circle-radius': 14,
+          'circle-color': '#000000',
+          'circle-opacity': 0.01   // görünmez ama tıklanabilir
         }
-      });
+      }, beforeFog);
       map.addLayer({
         id: 'stations-label',
         type: 'symbol',
@@ -116,9 +123,9 @@ export default function GameMap({
           'text-halo-color': '#05070a',
           'text-halo-width': 1.2
         }
-      });
+      }, beforeFog);
 
-      map.on('click', 'stations-pillar', (e) => {
+      map.on('click', 'stations-hit', (e) => {
         const f = e.features?.[0];
         if (f) {
           e.originalEvent.stopPropagation();
@@ -128,8 +135,8 @@ export default function GameMap({
       map.on('click', (e) => {
         handlers.current.onMapTap?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
       });
-      map.on('mouseenter', 'stations-pillar', () => { map.getCanvas().style.cursor = 'pointer'; });
-      map.on('mouseleave', 'stations-pillar', () => { map.getCanvas().style.cursor = ''; });
+      map.on('mouseenter', 'stations-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'stations-hit', () => { map.getCanvas().style.cursor = ''; });
 
       onReady?.(map);
     });
@@ -141,11 +148,19 @@ export default function GameMap({
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [styleUrl]);
 
   /* ---------- Sis ---------- */
   useEffect(() => {
-    if (readyRef.current && mapRef.current) updateFog(mapRef.current, cells);
+    if (!readyRef.current || !mapRef.current) return;
+    updateFog(mapRef.current, cells);
+
+    // Yeni mahalle açıldıysa sınırı parlat.
+    const count = cells instanceof Set ? cells.size : (cells?.length ?? 0);
+    if (count > prevCellCount.current && prevCellCount.current > 0) {
+      pulseEdge(mapRef.current);
+    }
+    prevCellCount.current = count;
   }, [cells]);
 
   /* ---------- Oyuncu ---------- */
@@ -160,11 +175,18 @@ export default function GameMap({
       markerRef.current = new Marker({ element: el, pitchAlignment: 'map' })
         .setLngLat([position.lng, position.lat])
         .addTo(map);
-      map.jumpTo({ center: [position.lng, position.lat], zoom: 16.5 });
+      map.jumpTo({ center: [position.lng, position.lat], zoom: 16.5, pitch: 62 });
     } else {
       markerRef.current.setLngLat([position.lng, position.lat]);
       if (followRef.current) {
-        map.easeTo({ center: [position.lng, position.lat], duration: 800 });
+        map.easeTo({
+          center: [position.lng, position.lat],
+          // Yürüme yönü biliniyorsa kamerayı ona çevir: oyuncu hep "ileri"
+          // bakıyor, mahalleyi keşfe giderken yön duygusu kaybolmuyor.
+          bearing: Number.isFinite(position.heading) ? position.heading : map.getBearing(),
+          duration: 900,
+          essential: true
+        });
       }
     }
 
@@ -184,9 +206,11 @@ export default function GameMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
+
+    updatePillars(map, stations);
+
     const src = map.getSource(SRC.stations);
     if (!src) return;
-
     src.setData({
       type: 'FeatureCollection',
       features: stations.map((s) => ({

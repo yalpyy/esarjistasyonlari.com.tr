@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import ConsentGate from './ConsentGate';
 import GameMap from './GameMap';
 import useGeoPlayer from './useGeoPlayer';
-import { canBuildAt, formatDistance, RULES, distance } from './geo';
+import { canBuildAt, formatDistance, RULES, distance, cellCount, turkeyProgress } from './geo';
 import {
   cellsInBbox, stationsInBbox, buildStation, claimStation, collectIncome, signOut
 } from './api';
@@ -149,8 +149,8 @@ function Game({ profile, refreshProfile }) {
           <span>Sv {profile.level} · {owned}/{quota} istasyon</span>
         </div>
         <div className="hud-card">
-          <b>{exploredKm2} km²</b>
-          <span>keşfedilen alan</span>
+          <b>{cellCount(cells).toLocaleString('tr-TR')} mahalle</b>
+          <span>{exploredKm2} km² · Türkiye'nin %{turkeyProgress(cells)}'i</span>
         </div>
         <button className="hud-card action" onClick={collect} disabled={busy}>
           <b>Geliri topla</b>

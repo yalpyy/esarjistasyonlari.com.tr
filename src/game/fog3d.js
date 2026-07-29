@@ -10,6 +10,8 @@ import * as h3 from 'h3-js';
  *
  * Sis düz bir gölge değil, fill-extrusion ile yükseltilmiş bir duvar:
  * oyuncu keşfettiği açıklığın içinde durur, etrafı karanlık duvarla çevrilidir.
+ * Duvarın dibinde ayrıca yumuşak bir pus katmanı var — duvar zeminle bıçak gibi
+ * kesişmesin, keşfedilmemiş alan sise doğru sönümlensin diye.
  */
 
 const WORLD_RING = [
@@ -22,7 +24,12 @@ const WORLD_RING = [
 
 export const FOG_SOURCE = 'fog-src';
 export const FOG_LAYER = 'fog-wall';
+export const FOG_HAZE_LAYER = 'fog-haze';
 export const FOG_EDGE_LAYER = 'fog-edge';
+export const FOG_EDGE_GLOW_LAYER = 'fog-edge-glow';
+
+const GLOW_BASE_WIDTH = 9;
+const GLOW_BASE_OPACITY = 0.3;
 
 function closeRing(ring) {
   if (!ring.length) return ring;
@@ -62,8 +69,14 @@ export function edgeFeature(cells) {
   };
 }
 
-/** Haritaya sis kaynak ve katmanlarını ekler. */
-export function addFogLayers(map, { wallHeight = 180, color = '#04060a', edge = '#00E676' } = {}) {
+/**
+ * Haritaya sis kaynak ve katmanlarını ekler.
+ *
+ * wallHeight ilk ayarlanacak değer: çok yüksekse yakın manzarayı tamamen
+ * kapatıyor, çok alçaksa eğimli kamerada duvarın üstünden bakılıp sis hissi
+ * kayboluyor. 260 m, zoom 16 civarında ufku kapatmadan çevreyi kapatıyor.
+ */
+export function addFogLayers(map, { wallHeight = 260, color = '#04060a', edge = '#00E676' } = {}) {
   if (map.getSource(FOG_SOURCE)) return;
 
   map.addSource(FOG_SOURCE, {
@@ -75,15 +88,48 @@ export function addFogLayers(map, { wallHeight = 180, color = '#04060a', edge = 
     data: { type: 'FeatureCollection', features: [] }
   });
 
+  // Zemin pusu: duvarın altında kalan, keşfedilmemiş alanı karartan düz katman.
+  map.addLayer({
+    id: FOG_HAZE_LAYER,
+    type: 'fill',
+    source: FOG_SOURCE,
+    paint: {
+      'fill-color': color,
+      'fill-opacity': 0.72
+    }
+  });
+
   map.addLayer({
     id: FOG_LAYER,
     type: 'fill-extrusion',
     source: FOG_SOURCE,
     paint: {
       'fill-extrusion-color': color,
-      'fill-extrusion-height': wallHeight,
+      // Uzaklaşınca duvarı alçalt: Türkiye ölçeğine bakarken duvar değil düz
+      // karartma istiyoruz, mahalle ölçeğinde ise tam yükseklik.
+      'fill-extrusion-height': [
+        'interpolate', ['linear'], ['zoom'],
+        10, 0,
+        13, wallHeight * 0.35,
+        16, wallHeight
+      ],
       'fill-extrusion-base': 0,
-      'fill-extrusion-opacity': 0.92
+      'fill-extrusion-opacity': 0.94,
+      'fill-extrusion-vertical-gradient': true
+    }
+  });
+
+  // İki katlı kenar: geniş yumuşak parıltı + ince keskin çizgi.
+  map.addLayer({
+    id: FOG_EDGE_GLOW_LAYER,
+    type: 'line',
+    source: `${FOG_SOURCE}-edge`,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-color': edge,
+      'line-width': GLOW_BASE_WIDTH,
+      'line-blur': 9,
+      'line-opacity': GLOW_BASE_OPACITY
     }
   });
 
@@ -91,11 +137,12 @@ export function addFogLayers(map, { wallHeight = 180, color = '#04060a', edge = 
     id: FOG_EDGE_LAYER,
     type: 'line',
     source: `${FOG_SOURCE}-edge`,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
       'line-color': edge,
-      'line-width': 2,
-      'line-blur': 2,
-      'line-opacity': 0.55
+      'line-width': 1.8,
+      'line-blur': 0.4,
+      'line-opacity': 0.85
     }
   });
 }
@@ -109,27 +156,28 @@ export function updateFog(map, cells) {
   edge.setData({ type: 'FeatureCollection', features: [edgeFeature(cells)] });
 }
 
-/** Binaları 3B yükselt. Stil dosyasında 'building' katmanı yoksa sessizce atlanır. */
-export function addBuildings(map, { source = 'openmaptiles', sourceLayer = 'building' } = {}) {
-  if (!map.getSource(source)) return false;
-  if (map.getLayer('game-buildings')) return true;
-  try {
-    map.addLayer({
-      id: 'game-buildings',
-      type: 'fill-extrusion',
-      source,
-      'source-layer': sourceLayer,
-      minzoom: 14,
-      paint: {
-        'fill-extrusion-color': '#1b2027',
-        'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
-        'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-        'fill-extrusion-opacity': 0.9
-      }
-    }, FOG_LAYER);   // binalar sisin ALTINDA kalsın
-    return true;
-  } catch (e) {
-    console.warn('[Oyun] 3B bina katmanı eklenemedi:', e.message);
-    return false;
-  }
+/**
+ * Yeni mahalle açıldığında sınırı bir kez parlatır.
+ *
+ * Keşif sessizce olursa oyuncu ilerlediğini fark etmiyor; bu kısa nabız
+ * "burayı yeni açtın" geri bildirimini veriyor.
+ */
+export function pulseEdge(map, duration = 900) {
+  if (!map.getLayer(FOG_EDGE_GLOW_LAYER)) return;
+  const start = performance.now();
+
+  const step = (now) => {
+    if (!map.getLayer?.(FOG_EDGE_GLOW_LAYER)) return;
+    const t = Math.min((now - start) / duration, 1);
+    const k = Math.sin(t * Math.PI);   // 0 -> 1 -> 0 yumuşak nabız
+    try {
+      map.setPaintProperty(FOG_EDGE_GLOW_LAYER, 'line-width', GLOW_BASE_WIDTH + k * 22);
+      map.setPaintProperty(FOG_EDGE_GLOW_LAYER, 'line-opacity', GLOW_BASE_OPACITY + k * 0.45);
+    } catch {
+      return;   // harita bu arada kaldırıldıysa sessizce bırak
+    }
+    if (t < 1) requestAnimationFrame(step);
+  };
+
+  requestAnimationFrame(step);
 }

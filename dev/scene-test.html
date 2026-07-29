@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>3B sahne testi</title>
+<style>
+  html, body { margin:0; height:100%; background:#0b0d0f; }
+  #map { position:absolute; inset:0; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script type="module">
+import { Map as MapLibreMap } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { addFogLayers, updateFog, pulseEdge, FOG_LAYER } from '/src/game/fog3d.js';
+import { addSky, addLighting, addBuildings, addPillars, updatePillars, BUILDING_LAYER, PILLAR_LAYER } from '/src/game/scene.js';
+import { cellsAround } from '/src/game/geo.js';
+
+const CENTER = { lat: 41.0082, lng: 28.9784 };
+
+// --- Sentetik "şehir": harici karo sunucusu bloklu olduğu için binaları
+// --- kendimiz üretiyoruz. Amaç fog/extrusion/katman sırasını doğrulamak.
+function fakeCity() {
+  const feats = [];
+  const step = 0.00075;
+  for (let i = -14; i <= 14; i++) {
+    for (let j = -14; j <= 14; j++) {
+      if ((i + j) % 2 === 0) continue;              // sokak boşlukları
+      const lat = CENTER.lat + i * step;
+      const lng = CENTER.lng + j * step * 1.35;
+      const w = step * 0.34, h = step * 0.45;
+      const seed = Math.abs(Math.sin(i * 12.9898 + j * 78.233) * 43758.5453) % 1;
+      feats.push({
+        type: 'Feature',
+        properties: { render_height: 6 + seed * 110 },
+        geometry: { type: 'Polygon', coordinates: [[
+          [lng - w, lat - h], [lng + w, lat - h], [lng + w, lat + h], [lng - w, lat + h], [lng - w, lat - h]
+        ]] }
+      });
+    }
+  }
+  return { type: 'FeatureCollection', features: feats };
+}
+
+// Kaynaklar boş: bu ortamda başlangıç stilinde GeoJSON kaynağı olunca
+// `load` olayı hiç tetiklenmiyor. Gerçek oyunda da stil vektör karo, GeoJSON
+// kaynakları load sonrası ekleniyor — harness aynı akışı taklit ediyor.
+const style = {
+  version: 8,
+  sources: {},
+  layers: [
+    { id: 'bg', type: 'background', paint: { 'background-color': '#0f1318' } }
+  ]
+};
+
+const map = new MapLibreMap({
+  container: 'map', style,
+  center: [CENTER.lng, CENTER.lat],
+  zoom: 16.2, pitch: 62, bearing: -22, antialias: true, maxPitch: 75
+});
+
+const explored = new Set(cellsAround(CENTER, 1));
+
+const stations = [
+  { id: 1, kind: 'virtual', power: 22,  lat: CENTER.lat + 0.0012, lng: CENTER.lng + 0.0016, mine: true },
+  { id: 2, kind: 'virtual', power: 150, lat: CENTER.lat - 0.0016, lng: CENTER.lng + 0.0026, mine: false },
+  { id: 3, kind: 'real',    power: 180, lat: CENTER.lat + 0.0022, lng: CENTER.lng - 0.0022, mine: false },
+  { id: 4, kind: 'virtual', power: 22,  lat: CENTER.lat - 0.0026, lng: CENTER.lng - 0.0014, mine: false }
+];
+
+window.__errs = [];
+window.__log = [];
+map.on('error', (e) => { window.__errs.push(String(e.error?.message || e.error || e)); });
+['styledata', 'sourcedata', 'dataloading', 'load', 'idle'].forEach((ev) =>
+  map.on(ev, (e) => { if (window.__log.length < 40) window.__log.push(ev + (e.sourceId ? ':' + e.sourceId : '')); })
+);
+window.__phase = 'created';
+
+map.on('load', () => {
+  window.__phase = 'loaded';
+  map.addSource('buildings', { type: 'geojson', data: fakeCity() });
+  addFogLayers(map);
+  addSky(map);
+  addLighting(map);
+  const built = addBuildings(map, { source: 'buildings' });
+  addPillars(map);
+  updateFog(map, explored);
+  updatePillars(map, stations);
+
+  const order = map.getStyle().layers.map(l => l.id);
+  window.__scene = {
+    buildingsAdded: built,
+    hasBuildingLayer: !!map.getLayer(BUILDING_LAYER),
+    hasPillarLayer: !!map.getLayer(PILLAR_LAYER),
+    hasFogLayer: !!map.getLayer(FOG_LAYER),
+    // Sisin ALTINDA olmaları gerekenler fog'dan önce gelmeli:
+    buildingsBeforeFog: order.indexOf(BUILDING_LAYER) < order.indexOf(FOG_LAYER),
+    pillarsBeforeFog: order.indexOf(PILLAR_LAYER) < order.indexOf(FOG_LAYER),
+    order,
+    sky: (() => { try { return !!map.getSky(); } catch { return 'n/a'; } })(),
+    exploredCells: explored.size
+  };
+  setTimeout(() => { window.__ready = true; }, 1200);
+});
+
+// Testin tetikleyebilmesi için
+window.__expand = () => {
+  const north = { lat: CENTER.lat + 0.012, lng: CENTER.lng };
+  cellsAround(north, 1).forEach(c => explored.add(c));
+  updateFog(map, explored);
+  pulseEdge(map);
+  return explored.size;
+};
+window.__view = (o) => { map.jumpTo(o); return true; };
+window.__map = map;
+window.__q = () => { const f = map.queryRenderedFeatures(); const by = {}; f.forEach(x => { by[x.layer.id] = (by[x.layer.id]||0)+1; }); return { total: f.length, by, zoom: map.getZoom(), pitch: map.getPitch(), center: map.getCenter(), srcLoaded: ['buildings','fog-src','pillars-src'].map(s => [s, map.getSource(s)?.loaded?.()]) }; };
+</script>
+</body>
+</html>
