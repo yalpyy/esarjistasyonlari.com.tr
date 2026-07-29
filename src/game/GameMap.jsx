@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
-import maplibregl from 'maplibre-gl';
+// maplibre-gl 5'ten itibaren ESM derlemesinde default export yok; isimli
+// içe aktarma şart (`import maplibregl from ...` build'i kırıyor).
+import { Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { addFogLayers, updateFog, addBuildings } from './fog3d';
 import { circlePolygon, RULES } from './geo';
@@ -42,7 +44,7 @@ export default function GameMap({
 
   /* ---------- Kurulum ---------- */
   useEffect(() => {
-    const map = new maplibregl.Map({
+    const map = new MapLibreMap({
       container: holder.current,
       style: STYLE_URL,
       center: [28.9784, 41.0082],   // konum gelene kadar İstanbul
@@ -54,7 +56,7 @@ export default function GameMap({
     });
     mapRef.current = map;
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new NavigationControl({ visualizePitch: true }), 'top-right');
     map.touchZoomRotate.enableRotation();
 
     map.on('load', () => {
@@ -155,7 +157,7 @@ export default function GameMap({
       const el = document.createElement('div');
       el.className = 'player-dot';
       el.innerHTML = '<span class="pulse"></span><span class="core"></span>';
-      markerRef.current = new maplibregl.Marker({ element: el, pitchAlignment: 'map' })
+      markerRef.current = new Marker({ element: el, pitchAlignment: 'map' })
         .setLngLat([position.lng, position.lat])
         .addTo(map);
       map.jumpTo({ center: [position.lng, position.lat], zoom: 16.5 });
