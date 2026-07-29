@@ -1,6 +1,7 @@
 {
   "buildCommand": "node scripts/generate-sitemap.mjs && vite build",
   "rewrites": [
+    { "source": "/mini-oyun", "destination": "/mini-oyun/index.html" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

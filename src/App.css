@@ -20,6 +20,19 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Oyun paketi inerken görünen ekran. game3d.css oyunla birlikte tembel
+   yüklendiği için bu stil burada, ana pakette durmak zorunda. */
+.game-boot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #0b0d0f;
+  color: #eef2f5;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
 /* ===== HEADER ===== */
 .app-header {
   display: flex;
