@@ -1,0 +1,138 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'><title>geom test</title><style>body{background:#0b0d0f;color:#e8eef4;font:13px ui-monospace,monospace;padding:1rem}</style></head><body><pre id=o></pre>
+<script type='module'>
+import * as h3 from 'h3-js';
+import { fogFeature, edgeFeature, exploredRings } from '/src/game/fog3d.js';
+import { pillarCollection } from '/src/game/scene.js';
+import { cellsAround, RULES, turkeyProgress } from '/src/game/geo.js';
+const assert = {
+  equal(a, b, m) { if (a !== b) throw new Error(m || 'equal: ' + JSON.stringify(a) + ' !== ' + JSON.stringify(b)); },
+  ok(v, m) { if (!v) throw new Error(m || 'ok: falsy'); },
+  deepEqual(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(m || 'deepEqual: ' + JSON.stringify(a) + ' vs ' + JSON.stringify(b)); }
+};
+const logs = [];
+const _log = console.log.bind(console);
+console.log = (...a) => { logs.push(a.join(' ')); _log(...a); document.getElementById('o').textContent = logs.join('\n'); };
+
+try {
+/**
+ * Saf geometri doğrulaması — tarayıcı/WebGL gerekmiyor.
+ * fog3d.js ve scene.js'in MapLibre'a verdiği GeoJSON'ı doğrudan sınar.
+ */
+
+const CENTER = { lat: 41.0082, lng: 28.9784 };
+let pass = 0;
+const ok = (name) => { console.log('  ✓', name); pass++; };
+
+/* ---------- Sis ---------- */
+
+const cells = new Set(cellsAround(CENTER, 1));
+assert.equal(cells.size, 7, 'merkez + 6 komşu');
+ok('cellsAround res8 ring1 -> 7 hücre');
+
+const fog = fogFeature(cells);
+assert.equal(fog.geometry.type, 'Polygon');
+// [0] dünya halkası, kalanlar delik
+assert.ok(fog.geometry.coordinates.length >= 2, 'en az bir delik olmalı');
+const world = fog.geometry.coordinates[0];
+assert.deepEqual(world[0], [-180, -85]);
+ok('sis çokgeni = dünya halkası + keşif delikleri');
+
+// Delik gerçekten oyuncunun etrafında mı? Ray casting ile test.
+function inRing(ring, [x, y]) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+const hole = fog.geometry.coordinates[1];
+assert.ok(inRing(hole, [CENTER.lng, CENTER.lat]), 'oyuncu deliğin içinde olmalı');
+ok('oyuncunun konumu sis deliğinin içinde (sis onu örtmüyor)');
+
+// Uzaktaki bir nokta delikte OLMAMALI
+assert.ok(!inRing(hole, [CENTER.lng + 0.5, CENTER.lat + 0.5]), '10 km ötesi kapalı kalmalı');
+ok('keşfedilmemiş alan delik dışında (sis kapatıyor)');
+
+// Her halka kapalı olmalı, yoksa fill-extrusion bozuk çiziyor
+for (const ring of exploredRings(cells)) {
+  assert.deepEqual(ring[0], ring[ring.length - 1], 'halka kapalı değil');
+}
+ok('tüm keşif halkaları kapalı');
+
+assert.equal(edgeFeature(cells).geometry.type, 'MultiLineString');
+ok('kenar geometrisi MultiLineString');
+
+// Boş küme çökmemeli (oyunun ilk anı)
+assert.equal(fogFeature(new Set()).geometry.coordinates.length, 1);
+assert.equal(exploredRings(null).length, 0);
+ok('hücre yokken sis tam kapalı, çökme yok');
+
+// Bitişik hücreler tek halkada birleşmeli (örtüşen delik = hayalet leke)
+const wide = new Set(cellsAround(CENTER, 2));
+assert.equal(exploredRings(wide).length, 1, 'bitişik alan tek parça olmalı');
+ok('bitişik 19 hücre tek birleşik halka veriyor');
+
+/* ---------- Sütunlar ---------- */
+
+const stations = [
+  { id: 1, kind: 'virtual', power: 22, lat: CENTER.lat, lng: CENTER.lng, mine: true },
+  { id: 2, kind: 'virtual', power: 150, lat: CENTER.lat, lng: CENTER.lng, mine: false },
+  { id: 3, kind: 'real', power: 180, lat: CENTER.lat, lng: CENTER.lng, mine: false }
+];
+const fc = pillarCollection(stations);
+assert.equal(fc.features.length, 3);
+const [ac, dc, real] = fc.features.map((f) => f.properties);
+
+assert.ok(ac.height < dc.height && dc.height < real.height, 'yükseklik AC < DC < gerçek');
+ok(`sütun yükseklikleri ayrışıyor (AC ${ac.height} < DC ${dc.height} < gerçek ${real.height})`);
+
+assert.equal(ac.color, '#00E676');
+assert.equal(dc.color, '#00B0FF');
+assert.equal(real.color, '#FFB74D');
+ok('sütun renkleri site paletiyle eşleşiyor');
+
+assert.equal(ac.mine, true);
+assert.equal(dc.mine, false);
+ok('sahiplik bayrağı taşınıyor (tepe başlığı bunu kullanıyor)');
+
+for (const f of fc.features) {
+  assert.equal(f.geometry.type, 'Polygon');
+  const ring = f.geometry.coordinates[0];
+  assert.equal(ring.length, 9, 'sekizgen + kapanış noktası');
+  assert.deepEqual(ring[0], ring[8], 'sütun halkası kapalı');
+  assert.ok(typeof f.properties.height === 'number' && f.properties.height > 0);
+}
+ok('her sütun kapalı sekizgen ve pozitif yükseklikte');
+
+// Sütun yarıçapı istasyon aralığından küçük olmalı, yoksa iki sütun birleşir
+const ring = fc.features[0].geometry.coordinates[0];
+const spanM = Math.max(...ring.map(([lng]) => Math.abs(lng - CENTER.lng))) * 111320 * Math.cos(CENTER.lat * Math.PI / 180);
+assert.ok(spanM * 2 < RULES.MIN_STATION_GAP, `sütun çapı ${(spanM * 2).toFixed(1)}m < ${RULES.MIN_STATION_GAP}m`);
+ok(`sütun çapı (${(spanM * 2).toFixed(1)} m) minimum istasyon aralığının altında`);
+
+assert.deepEqual(pillarCollection([]), { type: 'FeatureCollection', features: [] });
+ok('istasyon yokken boş koleksiyon');
+
+/* ---------- H3 çözünürlüğü ---------- */
+assert.equal(h3.getResolution(cellsAround(CENTER)[0]), RULES.H3_RES);
+ok(`keşif çözünürlüğü res ${RULES.H3_RES} (~0,74 km² / mahalle ölçeği)`);
+
+
+// Türkiye ilerlemesi
+assert.equal(turkeyProgress(new Set()), '0');
+ok('hiç keşif yokken ilerleme 0');
+const oneCell = new Set([cellsAround(CENTER)[0]]);
+assert.ok(!/^0,00000$/.test(turkeyProgress(oneCell)), 'tek mahalle sıfıra yuvarlanmamalı: ' + turkeyProgress(oneCell));
+ok('tek mahalle bile görünür bir yüzde veriyor (%' + turkeyProgress(oneCell) + ')');
+assert.equal(turkeyProgress(cells), turkeyProgress(Array.from(cells)));
+ok('ilerleme Set ve dizi için aynı');
+
+window.__result = { pass, done: true };
+console.log(pass + ' doğrulama geçti.');
+
+} catch (e) {
+  window.__result = { error: e.message, done: true };
+  console.log('HATA: ' + e.message);
+}
+</script></body></html>

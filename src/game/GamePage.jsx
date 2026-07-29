@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import ConsentGate from './ConsentGate';
 import GameMap from './GameMap';
 import useGeoPlayer from './useGeoPlayer';
-import { canBuildAt, formatDistance, RULES, distance } from './geo';
+import { canBuildAt, formatDistance, RULES, distance, cellCount, turkeyProgress } from './geo';
 import {
   cellsInBbox, stationsInBbox, buildStation, claimStation, collectIncome, signOut
 } from './api';
@@ -79,7 +79,12 @@ function Game({ profile, refreshProfile }) {
     if (!pre.ok) return say(pre.message, 'warn');
 
     setBusy(true);
-    const res = await buildStation({ lat, lng, kind: buildMode, accuracy: position.accuracy });
+    const res = await buildStation({
+      lat, lng, kind: buildMode,
+      accuracy: position.accuracy,
+      playerLat: position.lat,
+      playerLng: position.lng
+    });
     setBusy(false);
 
     if (res?.ok) {
@@ -149,8 +154,8 @@ function Game({ profile, refreshProfile }) {
           <span>Sv {profile.level} · {owned}/{quota} istasyon</span>
         </div>
         <div className="hud-card">
-          <b>{exploredKm2} km²</b>
-          <span>keşfedilen alan</span>
+          <b>{cellCount(cells).toLocaleString('tr-TR')} mahalle</b>
+          <span>{exploredKm2} km² · Türkiye'nin %{turkeyProgress(cells)}'i</span>
         </div>
         <button className="hud-card action" onClick={collect} disabled={busy}>
           <b>Geliri topla</b>
@@ -219,8 +224,10 @@ function reasonText(reason, extra) {
     case 'funds': return 'Bakiyen yetersiz.';
     case 'implausible': return 'Konum sıçraması algılandı, işlem sayılmadı.';
     case 'consent': return 'Konum rızası gerekiyor.';
-    case 'cooldown': return 'Bu istasyonu az önce aldın, biraz bekle.';
+    case 'cooldown': return 'Bu istasyon şu an başkasında, süresi dolunca dene.';
     case 'banned': return 'Hesabın oyun dışı bırakıldı.';
+    case 'weak_signal': return 'GPS sinyali zayıf, işlem sayılmadı.';
+    case 'unknown_station': return 'Bu istasyon oyun veritabanında yok.';
     default: return 'İşlem tamamlanamadı.';
   }
 }

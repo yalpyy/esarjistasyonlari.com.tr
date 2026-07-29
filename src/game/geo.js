@@ -73,10 +73,28 @@ export const isExplored = (point, cells) => cells.has(cellOf(point));
 export const opensNewCells = (point, cells) =>
   cellsAround(point).some((c) => !cells.has(c));
 
-export const exploredArea = (cells) => {
-  const n = cells instanceof Set ? cells.size : (cells?.length ?? 0);
-  return +(n * RULES.CELL_AREA_KM2).toFixed(2);
-};
+export const cellCount = (cells) =>
+  cells instanceof Set ? cells.size : (cells?.length ?? 0);
+
+export const exploredArea = (cells) => +(cellCount(cells) * RULES.CELL_AREA_KM2).toFixed(2);
+
+/** Türkiye yüzölçümü (km²) — keşif ilerlemesinin paydası. */
+export const TURKEY_AREA_KM2 = 783562;
+
+/**
+ * Türkiye'nin yüzde kaçı açıldı.
+ *
+ * Bir res-8 hücre ~0,74 km², yani ülkenin tamamı ~1,06 milyon hücre. Oran
+ * uzun süre binde birin altında kalıyor; bu yüzden yüzdeyi sabit basamakla
+ * değil, anlamlı ilk basamağa göre biçimlendiriyoruz — oyuncu ilk mahallesini
+ * açtığında "%0,00" görüp hiç ilerlemediğini sanmasın.
+ */
+export function turkeyProgress(cells) {
+  const pct = (cellCount(cells) * RULES.CELL_AREA_KM2 * 100) / TURKEY_AREA_KM2;
+  if (pct === 0) return '0';
+  const digits = pct >= 1 ? 1 : pct >= 0.01 ? 3 : 5;
+  return pct.toFixed(digits).replace('.', ',');
+}
 
 /* ---------- Kurulum ön kontrolü ---------- */
 

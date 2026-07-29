@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { cellsAround } from './geo';
 
 /**
  * Tüm oyun yazma işlemleri RPC üzerinden. İstemci hiçbir tabloya doğrudan
@@ -74,11 +75,37 @@ export async function setNickname(nickname) {
 
 /* ---------- Oyun ---------- */
 
+/**
+ * Keşfi bildirir.
+ *
+ * Hücreleri istemci hesaplıyor çünkü Supabase projesinde h3-pg yok; sunucu
+ * H3 üretemiyor. Sunucu konumu (hız + doğruluk) doğrulayıp hücreleri
+ * kaydediyor. Sis kozmetik olduğu ve gelir doğurmadığı için bu kabul edilebilir
+ * — para kazandıran her işlem hücreye değil, doğrulanmış konuma bakıyor.
+ * Ayrıntı: supabase/schema.sql dosya başı.
+ */
 export const recordDiscovery = ({ lat, lng, accuracy }) =>
-  rpc('record_discovery', { p_lat: lat, p_lng: lng, p_accuracy: Math.round(accuracy ?? 0) });
+  rpc('record_discovery', {
+    p_lat: lat,
+    p_lng: lng,
+    p_accuracy: Math.round(accuracy ?? 0),
+    p_cells: cellsAround({ lat, lng })
+  });
 
-export const buildStation = ({ lat, lng, kind, accuracy }) =>
-  rpc('build_station', { p_lat: lat, p_lng: lng, p_kind: kind, p_accuracy: Math.round(accuracy ?? 0) });
+/**
+ * İstasyon kurar. Hedef ve oyuncu konumu AYRI gönderilir: sunucu hız
+ * kontrolünü oyuncu konumuna, menzil kontrolünü ikisi arasındaki mesafeye
+ * uyguluyor. Tek koordinat gönderilseydi mesafe hep 0 çıkardı.
+ */
+export const buildStation = ({ lat, lng, kind, accuracy, playerLat, playerLng }) =>
+  rpc('build_station', {
+    p_lat: lat,
+    p_lng: lng,
+    p_kind: kind,
+    p_accuracy: Math.round(accuracy ?? 0),
+    p_player_lat: playerLat,
+    p_player_lng: playerLng
+  });
 
 export const claimStation = ({ ocmId, lat, lng, accuracy }) =>
   rpc('claim_station', { p_ocm_id: ocmId, p_lat: lat, p_lng: lng, p_accuracy: Math.round(accuracy ?? 0) });
