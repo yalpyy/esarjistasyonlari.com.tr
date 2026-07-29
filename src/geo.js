@@ -1,0 +1,229 @@
+/* Şarj Ağı Savaşı — oyun rotası stilleri.
+   Site paletiyle uyumlu: yeşil #00E676, mavi #00B0FF, zemin #0b0d0f. */
+
+.game-shell {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  background: #0b0d0f;
+  color: #eef2f5;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.game-map { position: absolute; inset: 0; }
+.game-map canvas { outline: none; }
+
+/* ---------- HUD ---------- */
+
+.hud-top {
+  position: absolute;
+  top: calc(0.6rem + env(safe-area-inset-top, 0px));
+  left: 0.6rem;
+  right: 0.6rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.hud-card {
+  flex: 1;
+  min-width: 0;
+  background: rgba(11, 13, 15, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+.hud-card b { display: block; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.hud-card span { color: rgba(238, 242, 245, 0.5); }
+.hud-card.action {
+  pointer-events: auto;
+  cursor: pointer;
+  color: #00E676;
+  border-color: rgba(0, 230, 118, 0.4);
+  text-align: left;
+  min-height: 48px;
+}
+.hud-card.action:disabled { opacity: 0.5; }
+
+/* ---------- Kurulum çubuğu ---------- */
+
+.build-bar {
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  gap: 0.5rem;
+  z-index: 5;
+}
+
+.build-chip {
+  flex: 1;
+  min-height: 56px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 20, 24, 0.92);
+  backdrop-filter: blur(10px);
+  color: #eef2f5;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+.build-chip b { display: block; font-size: 0.82rem; }
+.build-chip span { font-size: 0.7rem; color: rgba(238, 242, 245, 0.5); }
+.build-chip.ac.on { border-color: #00E676; background: rgba(0, 230, 118, 0.14); }
+.build-chip.dc.on { border-color: #00B0FF; background: rgba(0, 176, 255, 0.14); }
+.build-chip.ghost { flex: 0 0 80px; color: rgba(238, 242, 245, 0.6); }
+
+/* ---------- Oyuncu işareti ---------- */
+
+.player-dot { position: relative; width: 22px; height: 22px; }
+.player-dot .core {
+  position: absolute; inset: 6px;
+  border-radius: 999px;
+  background: #00B0FF;
+  box-shadow: 0 0 12px rgba(0, 176, 255, 0.9);
+}
+.player-dot .pulse {
+  position: absolute; inset: 0;
+  border-radius: 999px;
+  background: rgba(0, 176, 255, 0.35);
+  animation: player-pulse 2s ease-out infinite;
+}
+@keyframes player-pulse {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ---------- Bilgi şeritleri ---------- */
+
+.banner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  max-width: 92%;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: rgba(11, 13, 15, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.banner.info { border-color: rgba(0, 230, 118, 0.5); color: #00E676; }
+.banner.warn { border-color: rgba(255, 183, 77, 0.5); color: #FFB74D; }
+.banner.err  { border-color: rgba(255, 82, 82, 0.5); color: #FF5252; }
+
+.toast {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(4.6rem + env(safe-area-inset-top, 0px));
+  z-index: 8;
+  max-width: 92%;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  background: rgba(17, 20, 24, 0.96);
+  border-left: 3px solid #00B0FF;
+}
+.toast.good { border-left-color: #00E676; }
+.toast.warn { border-left-color: #FFB74D; }
+
+/* ---------- İstasyon kartı ---------- */
+
+.station-sheet {
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px));
+  z-index: 7;
+  background: rgba(17, 20, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.9rem;
+}
+.station-sheet h3 { margin: 0 0 0.2rem; font-size: 0.95rem; }
+.station-sheet .muted { margin: 0 0 0.5rem; font-size: 0.78rem; color: rgba(238, 242, 245, 0.55); }
+.station-sheet .close {
+  position: absolute; right: 0.5rem; top: 0.5rem;
+  width: 32px; height: 32px; border-radius: 999px;
+  background: transparent; border: 0; color: rgba(238, 242, 245, 0.6); cursor: pointer;
+}
+
+/* ---------- Giriş / rıza ekranı ---------- */
+
+.game-gate {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: radial-gradient(120% 90% at 50% 0%, #12181d 0%, #080a0c 70%);
+  color: #eef2f5;
+}
+.gate-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(17, 20, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.gate-card h1 { margin: 0; font-size: 1.25rem; }
+.gate-card .lead { margin: 0; font-size: 0.9rem; color: rgba(238, 242, 245, 0.6); line-height: 1.5; }
+
+.consent-list { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; line-height: 1.6; color: rgba(238, 242, 245, 0.75); }
+.consent-list b { color: #eef2f5; }
+
+.safety {
+  font-size: 0.82rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 183, 77, 0.1);
+  border: 1px solid rgba(255, 183, 77, 0.35);
+  color: #FFB74D;
+}
+
+.game-btn {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eef2f5;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+.game-btn.primary { background: #00E676; color: #052313; border-color: transparent; }
+.game-btn.ghost { background: transparent; color: rgba(238, 242, 245, 0.6); }
+.game-btn:disabled { opacity: 0.45; cursor: default; }
+
+.game-input {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  color: #eef2f5;
+  padding: 0 0.8rem;
+  font-size: 0.9rem;
+}
+
+.divider { display: flex; align-items: center; gap: 0.6rem; color: rgba(238, 242, 245, 0.35); font-size: 0.75rem; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1); }
+
+.gate-card .err { color: #FF5252; font-size: 0.82rem; margin: 0; }
+.gate-card .ok { color: #00E676; font-size: 0.85rem; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .player-dot .pulse { animation: none; }
+}
