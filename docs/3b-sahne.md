@@ -59,3 +59,30 @@ tarayıcıda açman yeterli, WebGL gerekmiyor.
   boşluklar (`exploredRings` iç halkaları) yok sayılıyor — pratikte nadir.
 - **`trafik` katmanı yok.** Pakette `traffic.js` gelmedi; gerçek yollarda araç
   dolaştırma özelliği bu depoda mevcut değil.
+
+## Backend
+
+Şema `supabase/schema.sql`. Supabase SQL Editor'e olduğu gibi yapıştırılır.
+
+`h3-pg` uzantısı bu projede **yok**, dolayısıyla sunucu H3 hücresi hesaplayamıyor.
+Hücreleri istemci gönderiyor, sunucu konumu doğruluyor. Sis kozmetik olduğu ve
+gelir doğurmadığı için bu kabul edildi; para kazandıran her işlem hücreye değil
+doğrulanmış konuma bakıyor. Ayrıntı dosya başındaki yorumda.
+
+Ele geçirme (`claim_station`) `public.ocm_stations` ayna tablosunu **zorunlu**
+kılıyor. Tablo boşken her ele geçirme `unknown_station` ile reddedilir — bu
+kasıtlı: sunucu istasyonun yerini bilmeden mesafe ölçemez, istemciye sorarsa
+Ankara'daki istasyon İstanbul'dan alınır. Doldurmak için:
+
+```bash
+SUPABASE_URL=https://xxx.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=eyJ... \
+VITE_OCM_API_KEY=... \
+node scripts/seed-ocm-stations.mjs
+```
+
+`service_role` anahtarı yalnızca bu betikte, sunucu tarafında kullanılır;
+frontend'de sadece `VITE_SUPABASE_ANON_KEY` var.
+
+Kurallar `game.rules()` içinde tek yerde toplandı ve `src/game/geo.js` içindeki
+`RULES` ile eşleşmeli — birini değiştirirken diğerini unutma.

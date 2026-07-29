@@ -79,7 +79,12 @@ function Game({ profile, refreshProfile }) {
     if (!pre.ok) return say(pre.message, 'warn');
 
     setBusy(true);
-    const res = await buildStation({ lat, lng, kind: buildMode, accuracy: position.accuracy });
+    const res = await buildStation({
+      lat, lng, kind: buildMode,
+      accuracy: position.accuracy,
+      playerLat: position.lat,
+      playerLng: position.lng
+    });
     setBusy(false);
 
     if (res?.ok) {
@@ -219,8 +224,10 @@ function reasonText(reason, extra) {
     case 'funds': return 'Bakiyen yetersiz.';
     case 'implausible': return 'Konum sıçraması algılandı, işlem sayılmadı.';
     case 'consent': return 'Konum rızası gerekiyor.';
-    case 'cooldown': return 'Bu istasyonu az önce aldın, biraz bekle.';
+    case 'cooldown': return 'Bu istasyon şu an başkasında, süresi dolunca dene.';
     case 'banned': return 'Hesabın oyun dışı bırakıldı.';
+    case 'weak_signal': return 'GPS sinyali zayıf, işlem sayılmadı.';
+    case 'unknown_station': return 'Bu istasyon oyun veritabanında yok.';
     default: return 'İşlem tamamlanamadı.';
   }
 }
