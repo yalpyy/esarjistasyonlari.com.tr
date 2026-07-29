@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -17,6 +18,9 @@ import RoutePlanner from './pages/RoutePlanner';
 import KvkkPage from './pages/KvkkPage';
 import StationDetail from './pages/StationDetail';
 import NotFound from './pages/NotFound';
+// Oyun tembel yükleniyor: MapLibre GL + h3-js birlikte ~1 MB. Statik import
+// edilirse bu paket ana sayfanın bundle'ına girer ve ilk açılışı yavaşlatır.
+const GamePage = lazy(() => import('./game/GamePage'));
 import { ThemeProvider } from './context/ThemeContext';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -24,11 +28,14 @@ import './App.css';
 
 function AppLayout() {
   const location = useLocation();
-  const isMapPage = location.pathname === '/';
+  // Oyun kendi tam ekran kabuğunu çiziyor: Header/Footer ve sabit reklam
+  // şeridi HUD'un üstüne binmesin diye tamamen dışarıda bırakılıyor.
+  const isGamePage = location.pathname === '/oyun';
+  const isMapPage = location.pathname === '/' || isGamePage;
 
   return (
     <div className="app">
-      <Header />
+      {!isGamePage && <Header />}
       <main className={`app-main ${!isMapPage ? 'app-main--scrollable' : ''}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -44,12 +51,20 @@ function AppLayout() {
           <Route path="/rota-planlayici" element={<RoutePlanner />} />
           <Route path="/kvkk" element={<KvkkPage />} />
           <Route path="/istasyon/:id" element={<StationDetail />} />
+          <Route
+            path="/oyun"
+            element={
+              <Suspense fallback={<div className="game-boot">Oyun yükleniyor…</div>}>
+                <GamePage />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
         {!isMapPage && <Footer />}
       </main>
-      <ContactButton />
-      <StickyBanner />
+      {!isGamePage && <ContactButton />}
+      {!isGamePage && <StickyBanner />}
     </div>
   );
 }
