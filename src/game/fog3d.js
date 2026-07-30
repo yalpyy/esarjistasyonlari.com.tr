@@ -14,7 +14,7 @@ import * as h3 from 'h3-js';
  * kesişmesin, keşfedilmemiş alan sise doğru sönümlensin diye.
  */
 
-const WORLD_RING = [
+export const WORLD_RING = [
   [-180, -85],
   [180, -85],
   [180, 85],

@@ -225,6 +225,26 @@ verisi taşıyabileceği için asla düşürülmez, eksik sütunları eklenir.
 Durumu görmek için `supabase/diagnose.sql` dosyasını çalıştır — tabloları,
 sütunları, fonksiyon imzalarını ve politikaları listeler, hiçbir şeyi değiştirmez.
 
+## Harita kapkara görünüyorsa
+
+İki ayrı sebebi olabilir, ikisi de giderildi:
+
+1. **Sis tüm dünyayı kapatıyordu.** `GameMap`'in `load` işleyicisi
+   `useEffect([styleUrl])` içinde olduğu için `cells` değerini ilk render'dan
+   yakalıyordu. Harita yüklenirken hücreler değişirse (demo modu, sunucudan
+   gelen liste) sis bayat/boş kümeyle kuruluyor ve hiç delik açmıyordu —
+   ekranın tamamı sis. Artık ref üzerinden güncel küme okunuyor.
+
+2. **Basemap hiç gelmiyor olabilir.** OpenFreeMap'in belgelediği stiller
+   `liberty`, `bright`, `positron`; koyu stil her zaman mevcut olmayabiliyor.
+   Stil 404 verirse basemap boş kalır. Artık `STYLE_CANDIDATES` sırayla
+   deneniyor ve hepsi başarısız olursa oyuncuya "Harita altlığı yüklenemedi"
+   bandı gösteriliyor — sessiz siyah ekran yok.
+
+Oyunun koyu görünümü artık stile bağlı değil: `addBasemapTint` dünyayı kaplayan
+yarı saydam koyu bir katman koyuyor, böylece açık temalı bir stil bile oyunun
+paletine uyuyor.
+
 ## Konum alınamazsa: demo modu
 
 Tarayıcı konum vermezse (izin reddi, sinyal yok, desteklenmeyen cihaz) oyuncu

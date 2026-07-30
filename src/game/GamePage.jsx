@@ -34,6 +34,7 @@ function Game({ profile, refreshProfile }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [mapError, setMapError] = useState(null);
   const mapRef = useRef(null);
 
   const {
@@ -163,6 +164,7 @@ function Game({ profile, refreshProfile }) {
         onMapTap={handleMapTap}
         onStationTap={handleStationTap}
         onReady={onReady}
+        onStyleError={setMapError}
       />
 
       {/* HUD */}
@@ -180,6 +182,13 @@ function Game({ profile, refreshProfile }) {
           <span>pasif kazanç</span>
         </button>
       </div>
+
+      {mapError && (
+        <div className="banner err">
+          Harita altlığı yüklenemedi ({mapError}). Oyun katmanları çalışıyor ama
+          sokaklar ve binalar görünmüyor.
+        </div>
+      )}
 
       {status === 'weak' && <div className="banner warn">GPS sinyali zayıf — keşif duraklatıldı.</div>}
       {suspicious && <div className="banner err">Olağandışı hareket algılandı. Sunucu bu adımları saymadı.</div>}
