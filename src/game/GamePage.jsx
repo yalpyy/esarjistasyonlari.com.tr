@@ -2,13 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import ConsentGate from './ConsentGate';
 import GameMap from './GameMap';
 import useGeoPlayer from './useGeoPlayer';
-import { canBuildAt, formatDistance, RULES, distance, cellCount, turkeyProgress } from './geo';
+import {
+  canBuildAt, formatDistance, RULES, distance, cellCount, turkeyProgress,
+  FALLBACK_POSITION
+} from './geo';
 import {
   cellsInBbox, stationsInBbox, buildStation, claimStation, collectIncome, signOut
 } from './api';
 import './game3d.css';
 
 const COST = { AC: 1000, DC: 5000 };
+
+const DEMO_BLOCK =
+  'Demo modundasın — gerçek konum alınmadığı için istasyon kuramaz, gelir toplayamazsın.';
 
 /** Sunucunun kural redleri. Bunların dışındakiler altyapı hatasıdır. */
 const KNOWN_REASONS = new Set([
@@ -28,10 +34,13 @@ function Game({ profile, refreshProfile }) {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [mapError, setMapError] = useState(null);
   const mapRef = useRef(null);
 
-  const { position, cells, status, error, suspicious, exploredKm2 } =
-    useGeoPlayer({ enabled: true, initialCells: serverCells });
+  const {
+    position, cells, status, error, suspicious, exploredKm2,
+    isDemo, locationUnavailable, startDemo, retryLocation
+  } = useGeoPlayer({ enabled: true, initialCells: serverCells });
 
   const say = useCallback((text, tone = 'info') => {
     setToast({ text, tone });
@@ -73,6 +82,7 @@ function Game({ profile, refreshProfile }) {
   /* ---------- Kurulum ---------- */
   const handleMapTap = async ({ lat, lng }) => {
     if (!buildMode) return;
+    if (isDemo) return say(DEMO_BLOCK, 'warn');
     const target = { lat, lng };
     const pre = canBuildAt(target, {
       player: position,
@@ -111,6 +121,7 @@ function Game({ profile, refreshProfile }) {
 
   const claim = async () => {
     if (!selected || !position) return;
+    if (isDemo) return say(DEMO_BLOCK, 'warn');
     setBusy(true);
     const res = await claimStation({
       ocmId: Number(selected.id), lat: position.lat, lng: position.lng, accuracy: position.accuracy
@@ -126,6 +137,7 @@ function Game({ profile, refreshProfile }) {
   };
 
   const collect = async () => {
+    if (isDemo) return say(DEMO_BLOCK, 'warn');
     setBusy(true);
     const res = await collectIncome();
     setBusy(false);
@@ -152,6 +164,7 @@ function Game({ profile, refreshProfile }) {
         onMapTap={handleMapTap}
         onStationTap={handleStationTap}
         onReady={onReady}
+        onStyleError={setMapError}
       />
 
       {/* HUD */}
@@ -164,15 +177,48 @@ function Game({ profile, refreshProfile }) {
           <b>{cellCount(cells).toLocaleString('tr-TR')} mahalle</b>
           <span>{exploredKm2} km² · Türkiye'nin %{turkeyProgress(cells)}'i</span>
         </div>
-        <button className="hud-card action" onClick={collect} disabled={busy}>
+        <button className="hud-card action" onClick={collect} disabled={busy || isDemo}>
           <b>Geliri topla</b>
           <span>pasif kazanç</span>
         </button>
       </div>
 
+      {mapError && (
+        <div className="banner err">
+          Harita altlığı yüklenemedi ({mapError}). Oyun katmanları çalışıyor ama
+          sokaklar ve binalar görünmüyor.
+        </div>
+      )}
+
       {status === 'weak' && <div className="banner warn">GPS sinyali zayıf — keşif duraklatıldı.</div>}
-      {status === 'denied' && <div className="banner err">{error}</div>}
       {suspicious && <div className="banner err">Olağandışı hareket algılandı. Sunucu bu adımları saymadı.</div>}
+
+      {isDemo && (
+        <div className="banner warn demo-banner">
+          <b>Demo modu — {FALLBACK_POSITION.label}.</b> Haritayı gezebilirsin ama
+          istasyon kuramazsın. Gerçek oynamak için konum izni gerekiyor.
+          <button className="banner-action" onClick={retryLocation}>Konumu tekrar dene</button>
+        </div>
+      )}
+
+      {/* Konum alınamadı: oyuncu boş ekranda kalmasın, seçenek sunulsun. */}
+      {locationUnavailable && !isDemo && (
+        <div className="game-overlay">
+          <div className="gate-card">
+            <h1>Konumun alınamadı</h1>
+            <p className="lead">{error || 'Tarayıcı konum bilgisi vermedi.'}</p>
+            <p className="hint-note">
+              Oyun konumla oynanıyor. Şimdilik <b>{FALLBACK_POSITION.label}</b> üzerinden
+              demo olarak başlatabiliriz: haritayı ve 3B dünyayı gezersin, ama istasyon
+              kurma ve gelir toplama kapalı kalır — sahte konumla ekonomiye dokunulamaz.
+            </p>
+            <button className="game-btn primary" onClick={startDemo}>
+              {FALLBACK_POSITION.label}'den demo başlat
+            </button>
+            <button className="game-btn" onClick={retryLocation}>Konum iznini tekrar dene</button>
+          </div>
+        </div>
+      )}
 
       {/* Kurulum çubuğu */}
       <div className="build-bar">
@@ -180,6 +226,8 @@ function Game({ profile, refreshProfile }) {
           <button
             key={kind}
             className={`build-chip ${kind.toLowerCase()} ${buildMode === kind ? 'on' : ''}`}
+            disabled={isDemo}
+            title={isDemo ? DEMO_BLOCK : undefined}
             onClick={() => setBuildMode(buildMode === kind ? null : kind)}
           >
             <b>{kind === 'AC' ? 'AC 22 kW' : 'DC 150 kW'}</b>

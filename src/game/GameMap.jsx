@@ -4,7 +4,9 @@ import { useEffect, useRef } from 'react';
 import { Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { addFogLayers, updateFog, pulseEdge, FOG_LAYER } from './fog3d';
-import { addSky, addLighting, addBuildings, addPillars, updatePillars } from './scene';
+import {
+  addSky, addLighting, addBuildings, addPillars, updatePillars, addBasemapTint
+} from './scene';
 import { circlePolygon, RULES } from './geo';
 
 /**
@@ -20,7 +22,22 @@ import { circlePolygon, RULES } from './geo';
  * karo sunucusuna çıkamayan ortamlarda görsel test için).
  */
 
-export const STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
+/**
+ * Karo stilleri, sırayla denenir.
+ *
+ * OpenFreeMap'in belgelediği stiller liberty / bright / positron. Koyu stil
+ * her zaman mevcut olmayabiliyor; stil 404 verirse basemap hiç gelmez ve ekran
+ * kapkara kalır. Bu yüzden ilk stil yüklenemezse otomatik olarak sonrakine
+ * geçiliyor ve oyunun koyu görünümü stile değil, addBasemapTint katmanına
+ * bırakılıyor.
+ */
+export const STYLE_CANDIDATES = [
+  'https://tiles.openfreemap.org/styles/dark',
+  'https://tiles.openfreemap.org/styles/liberty',
+  'https://tiles.openfreemap.org/styles/positron'
+];
+
+export const STYLE_URL = STYLE_CANDIDATES[0];
 
 const SRC = { stations: 'stations-src', range: 'range-src' };
 
@@ -33,7 +50,8 @@ export default function GameMap({
   styleUrl = STYLE_URL,
   onMapTap,                // ({lat,lng}) => void
   onStationTap,            // (station) => void
-  onReady                  // (map) => void
+  onReady,                 // (map) => void
+  onStyleError             // (message) => void
 }) {
   const holder = useRef(null);
   const mapRef = useRef(null);
@@ -42,9 +60,21 @@ export default function GameMap({
   const followRef = useRef(followPlayer);
   const handlers = useRef({ onMapTap, onStationTap });
   const prevCellCount = useRef(0);
+  // load işleyicisi useEffect([styleUrl]) içinde; cells/stations'ı doğrudan
+  // okusaydı İLK render'daki değeri yakalardı. Harita yüklenirken hücreler
+  // değişirse (demo modu, sunucudan gelen liste) sis bayat/boş kümeyle kurulur
+  // ve tüm dünyayı kapatır — ekran kapkara olur. Ref'ler bunu engelliyor.
+  const cellsRef = useRef(cells);
+  const stationsRef = useRef(stations);
+  const styleIndexRef = useRef(0);
+  const wiredRef = useRef(false);
+  const styleErrorRef = useRef(onStyleError);
+  styleErrorRef.current = onStyleError;
 
   handlers.current = { onMapTap, onStationTap };
   followRef.current = followPlayer;
+  cellsRef.current = cells;
+  stationsRef.current = stations;
 
   /* ---------- Kurulum ---------- */
   useEffect(() => {
@@ -64,8 +94,32 @@ export default function GameMap({
     map.addControl(new NavigationControl({ visualizePitch: true }), 'top-right');
     map.touchZoomRotate.enableRotation();
 
-    map.on('load', () => {
+    /**
+     * Stil yüklenemezse sessizce siyah ekranda kalma: sıradaki adayı dene,
+     * hepsi biterse üst katmana haber ver.
+     */
+    map.on('error', (e) => {
+      const msg = e?.error?.message || '';
+      const styleFailed = /style|Failed to fetch|404/i.test(msg) && !readyRef.current;
+      if (!styleFailed) return;
+
+      const next = styleIndexRef.current + 1;
+      if (styleUrl === STYLE_URL && next < STYLE_CANDIDATES.length) {
+        styleIndexRef.current = next;
+        console.warn(`[Oyun] Harita stili yüklenemedi (${msg}); yedeğe geçiliyor:`, STYLE_CANDIDATES[next]);
+        map.setStyle(STYLE_CANDIDATES[next]);
+      } else {
+        styleErrorRef.current?.(msg || 'Harita stili yüklenemedi.');
+      }
+    });
+
+    // setStyle sonrası tüm özel katmanlar silinir; 'style.load' her stilde
+    // yeniden tetiklenir, bu yüzden kurulum burada.
+    map.on('style.load', () => {
       readyRef.current = true;
+
+      // Tint en önce: stilin üstünde, oyunun tüm katmanlarının altında kalsın.
+      addBasemapTint(map);
 
       // Sıra önemli: sis katmanları önce kurulmalı ki binalar ve sütunlar
       // `beforeId: FOG_LAYER` ile sisin ALTINA yerleşebilsin.
@@ -74,8 +128,8 @@ export default function GameMap({
       addLighting(map);
       addBuildings(map);
       addPillars(map);
-      updateFog(map, cells);
-      updatePillars(map, stations);
+      updateFog(map, cellsRef.current);
+      updatePillars(map, stationsRef.current);
 
       const beforeFog = map.getLayer(FOG_LAYER) ? FOG_LAYER : undefined;
 
@@ -125,24 +179,32 @@ export default function GameMap({
         }
       }, beforeFog);
 
-      map.on('click', 'stations-hit', (e) => {
-        const f = e.features?.[0];
-        if (f) {
-          e.originalEvent.stopPropagation();
-          handlers.current.onStationTap?.({ ...f.properties, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] });
-        }
-      });
-      map.on('click', (e) => {
-        handlers.current.onMapTap?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
-      });
-      map.on('mouseenter', 'stations-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
-      map.on('mouseleave', 'stations-hit', () => { map.getCanvas().style.cursor = ''; });
+      // Olay bağlama ve onReady yalnızca BİR KEZ: style.load her stil
+      // değişiminde tetikleniyor, tekrar bağlanırsa tıklamalar çift işlenir ve
+      // GamePage viewport'u iki kez yeniler.
+      if (!wiredRef.current) {
+        wiredRef.current = true;
 
-      onReady?.(map);
+        map.on('click', 'stations-hit', (e) => {
+          const f = e.features?.[0];
+          if (f) {
+            e.originalEvent.stopPropagation();
+            handlers.current.onStationTap?.({ ...f.properties, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] });
+          }
+        });
+        map.on('click', (e) => {
+          handlers.current.onMapTap?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        });
+        map.on('mouseenter', 'stations-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'stations-hit', () => { map.getCanvas().style.cursor = ''; });
+
+        onReady?.(map);
+      }
     });
 
     return () => {
       readyRef.current = false;
+      wiredRef.current = false;
       markerRef.current?.remove();
       map.remove();
       mapRef.current = null;

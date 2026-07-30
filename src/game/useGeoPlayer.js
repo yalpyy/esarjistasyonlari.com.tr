@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RULES, distance, opensNewCells, isPlausibleMove, exploredArea, cellsAround } from './geo';
+import {
+  RULES, distance, opensNewCells, isPlausibleMove, exploredArea, cellsAround,
+  FALLBACK_POSITION
+} from './geo';
 import { recordDiscovery } from './api';
 
 const CACHE_KEY = 'sarj.geo.cells.v2';
@@ -7,20 +10,29 @@ const CACHE_KEY = 'sarj.geo.cells.v2';
 /**
  * Oyuncunun konumunu izler, yeni H3 hücrelerini açar ve sunucuya bildirir.
  * Rıza verilmeden `enabled` true olmamalı.
+ *
+ * Konum alınamazsa (izin reddi, sinyal yok, desteklenmeyen cihaz) oyuncuya
+ * DEMO modu sunulur: harita Ataşehir'de açılır, 3B dünya gezilebilir, ama
+ * konum sunucuya gönderilmez ve ekonomiye dokunulamaz. Sahte konumu sunucuya
+ * göndermek, izni reddeden herkese serbest istasyon kurma hakkı verirdi.
  */
 export default function useGeoPlayer({ enabled = false, initialCells = [] } = {}) {
   const [position, setPosition] = useState(null);      // {lat, lng, accuracy, t}
   const [cells, setCells] = useState(() => new Set([...readCache(), ...initialCells]));
-  const [status, setStatus] = useState('idle');        // idle | locating | tracking | denied | weak | error
+  // idle | locating | tracking | denied | weak | error | demo
+  const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   const [suspicious, setSuspicious] = useState(false);
+  const [demo, setDemo] = useState(false);
 
   const cellsRef = useRef(cells);
   const prevRef = useRef(null);
   const watchRef = useRef(null);
   const pendingRef = useRef(false);
+  const demoRef = useRef(false);
 
   useEffect(() => { cellsRef.current = cells; }, [cells]);
+  useEffect(() => { demoRef.current = demo; }, [demo]);
 
   useEffect(() => {
     if (!initialCells.length) return;
@@ -41,6 +53,7 @@ export default function useGeoPlayer({ enabled = false, initialCells = [] } = {}
   }, []);
 
   const commit = useCallback(async (point) => {
+    if (demoRef.current) return;   // demo konumu sunucuya ASLA gönderilmez
     if (pendingRef.current) return;
     pendingRef.current = true;
     try {
@@ -59,7 +72,7 @@ export default function useGeoPlayer({ enabled = false, initialCells = [] } = {}
   }, [mergeCells]);
 
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (!enabled || demo) return undefined;
     if (!('geolocation' in navigator)) {
       setStatus('error');
       setError('Bu cihaz konum servisini desteklemiyor.');
@@ -126,7 +139,33 @@ export default function useGeoPlayer({ enabled = false, initialCells = [] } = {}
       document.removeEventListener('visibilitychange', onVisibility);
       stop();
     };
-  }, [enabled, commit]);
+  }, [enabled, demo, commit]);
+
+  /**
+   * Demo moduna geç: haritayı Ataşehir'de aç.
+   *
+   * Hücreler yalnızca BELLEKTE açılıyor — writeCache çağrılmıyor, çünkü demo
+   * izini kalıcı önbelleğe yazmak, oyuncu gerçek konumla döndüğünde sahte
+   * keşfedilmiş alan bırakırdı.
+   */
+  const startDemo = useCallback(() => {
+    setDemo(true);
+    setStatus('demo');
+    setError(null);
+    setSuspicious(false);
+    prevRef.current = null;
+    setPosition({ ...FALLBACK_POSITION, accuracy: null, demo: true, t: Date.now() });
+    setCells(new Set(cellsAround(FALLBACK_POSITION)));
+  }, []);
+
+  /** Demodan çık ve konumu yeniden dene. */
+  const retryLocation = useCallback(() => {
+    setDemo(false);
+    setStatus('locating');
+    setError(null);
+    setPosition(null);
+    setCells(new Set(readCache()));
+  }, []);
 
   return {
     position,
@@ -134,6 +173,11 @@ export default function useGeoPlayer({ enabled = false, initialCells = [] } = {}
     status,
     error,
     suspicious,
+    isDemo: demo,
+    /** Konum alınamadı; oyuncuya demo teklif edilmeli. */
+    locationUnavailable: status === 'denied' || status === 'error',
+    startDemo,
+    retryLocation,
     exploredKm2: exploredArea(cells),
     distanceTo: useCallback(
       (target) => (position && target ? distance(position, target) : null),

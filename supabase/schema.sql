@@ -22,6 +22,47 @@
 -- =============================================================================
 
 -- =============================================================================
+-- 0. Eski fonksiyon sürümlerini temizle
+--
+-- `create or replace function` sanıldığından çok daha dar: yalnızca gövdeyi
+-- değiştirebilir. Şunların hiçbirini yapamaz ve hata verir:
+--   * argüman sayısı/tipi değişirse -> eski sürüm SİLİNMEZ, yanına ikinci bir
+--     fonksiyon eklenir; PostgREST iki aday arasında kalıp çağrıyı reddeder
+--     ("function is not unique") ya da yanlış imzayı seçer,
+--   * varsayılan parametre eklenir/kaldırılırsa -> 42P13
+--     "cannot remove parameter defaults from existing function",
+--   * dönüş tipi değişirse -> 42P13 "cannot change return type".
+--
+-- Bu yüzden şema, kendi fonksiyonlarını yeniden kurmadan önce imzası ne olursa
+-- olsun düşürüyor. Böylece dosya, hangi eski sürüm kurulu olursa olsun
+-- çalıştırılabilir kalıyor.
+--
+-- Blok en başta: aşağıdaki bölümler bu fonksiyonları yeniden kuruyor.
+-- =============================================================================
+
+do $$
+declare f record;
+begin
+  for f in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where (n.nspname = 'public' and p.proname in (
+             'set_location_consent', 'delete_my_data', 'record_discovery',
+             'cells_in_bbox', 'build_station', 'claim_station',
+             'collect_income', 'stations_in_bbox', 'purge_old_locations',
+             'handle_new_user'))
+        or (n.nspname = 'game' and p.proname in (
+             'rules', 'distance_m', 'actor', 'assert_fix'))
+  loop
+    -- cascade: handle_new_user'a bağlı tetikleyici de düşsün; aşağıda
+    -- yeniden kuruluyor.
+    execute format('drop function if exists %s cascade', f.sig);
+  end loop;
+end;
+$$;
+
+-- =============================================================================
 -- 1. Oyun kuralları — tek kaynak. src/game/geo.js RULES ile eşleşmeli.
 -- =============================================================================
 
@@ -66,6 +107,73 @@ $$;
 -- =============================================================================
 -- 3. Tablolar
 -- =============================================================================
+
+/**
+ * Bozuk/yarım tabloları önce onar.
+ *
+ * `create table if not exists` mevcut tabloyu OLDUĞU GİBİ bırakır. Tablo
+ * beklenenden farklı bir şekle sahipse (yarım kalmış kurulum, elle yapılmış
+ * değişiklik, başka bir amaçla açılmış aynı isimli tablo) sonraki CREATE INDEX
+ * ve CREATE POLICY satırları `column "..." does not exist` ile patlar — ve hata
+ * hangi tablodan geldiğini söylemez.
+ *
+ * Bu blok oyunun KENDİ tablolarını denetler. Şekil bozuksa:
+ *   - tablo boşsa: sessizce düşürülür, aşağıda doğru şekliyle yeniden kurulur.
+ *   - tablo doluysa: veri kaybetmemek için açık bir hata verir ve ne yapılacağını
+ *     söyler. Sessizce veri silmek yok.
+ *
+ * public.profiles bu listede YOK: Supabase şablonundan gelen gerçek kullanıcı
+ * verisi taşıyabilir, o yüzden asla düşürülmüyor; eksik sütunları aşağıda
+ * `alter table ... add column if not exists` ile tamamlanıyor.
+ */
+do $$
+declare
+  t       record;
+  missing text;
+  cnt     bigint;
+begin
+  for t in
+    select * from (values
+      ('discoveries',  array['user_id', 'cell', 'lat', 'lng', 'created_at']),
+      ('stations',     array['id', 'owner', 'kind', 'power', 'lat', 'lng',
+                             'created_at', 'last_collected_at']),
+      ('claims',       array['ocm_id', 'owner', 'lat', 'lng', 'claimed_at',
+                             'expires_at', 'collected_at']),
+      ('ocm_stations', array['ocm_id', 'title', 'lat', 'lng', 'power', 'updated_at'])
+    ) as x(tbl, cols)
+  loop
+    if to_regclass('public.' || t.tbl) is null then
+      continue;   -- yok; aşağıda sıfırdan kurulacak
+    end if;
+
+    select string_agg(c, ', ')
+      into missing
+      from unnest(t.cols) c
+     where not exists (
+       select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = t.tbl and column_name = c
+     );
+
+    if missing is null then
+      continue;   -- şekli doğru
+    end if;
+
+    execute format('select count(*) from public.%I', t.tbl) into cnt;
+
+    if cnt = 0 then
+      raise notice 'public.% beklenen sütunları taşımıyor (eksik: %). Tablo boş, yeniden oluşturuluyor.',
+        t.tbl, missing;
+      execute format('drop table public.%I cascade', t.tbl);
+    else
+      -- RAISE yalnızca % yer tutucusunu bilir; format()'taki %I burada geçersiz.
+      raise exception
+        'public.% tablosu beklenen sütunları taşımıyor (eksik: %) ve % satır veri içeriyor. '
+        'Veriyi yedekleyip tabloyu elle kaldır (drop table public.% cascade), sonra bu dosyayı tekrar çalıştır.',
+        t.tbl, missing, cnt, t.tbl;
+    end if;
+  end loop;
+end;
+$$;
 
 create table if not exists public.profiles (
   id                  uuid primary key references auth.users(id) on delete cascade,
@@ -279,21 +387,6 @@ grant select on public.stations, public.claims, public.ocm_stations
 grant select on public.profiles, public.discoveries to authenticated;
 -- Sadece takma ad. balance/level/banned istemciden yazılamaz.
 grant update (nickname) on public.profiles to authenticated;
-
--- =============================================================================
--- 4b. Eski fonksiyon sürümlerini temizle
---
--- `create or replace function` yalnızca AYNI imzayı değiştirir. İmza
--- değiştiğinde eski sürüm veritabanında kalır ve PostgREST iki aday arasında
--- kalıp çağrıyı reddedebilir ("function is not unique") ya da istemcinin artık
--- göndermediği eski imzayı seçebilir.
---
--- build_station 4 argümandan 6'ya çıktı (oyuncu konumu ayrı parametre oldu),
--- bu yüzden eski sürümün açıkça düşürülmesi gerekiyor.
--- =============================================================================
-
-drop function if exists public.build_station(double precision, double precision, text, int);
-drop function if exists public.record_discovery(double precision, double precision, int);
 
 -- =============================================================================
 -- 5. Kayıt olunca profil aç

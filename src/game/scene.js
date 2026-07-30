@@ -8,12 +8,45 @@
  */
 
 import { circlePolygon } from './geo';
-import { FOG_LAYER } from './fog3d';
+import { FOG_LAYER, WORLD_RING } from './fog3d';
 
 export const PILLAR_SOURCE = 'pillars-src';
 export const PILLAR_LAYER = 'stations-pillar-3d';
 export const PILLAR_CAP_LAYER = 'stations-pillar-cap';
 export const BUILDING_LAYER = 'game-buildings';
+
+export const TINT_LAYER = 'basemap-tint';
+
+/**
+ * Basemap'i karart.
+ *
+ * Oyun koyu temalı ama hangi stilin geleceği garanti değil: OpenFreeMap'in
+ * koyu stili kaldırılabilir, MapTiler/Protomaps'e geçilebilir ya da açık temalı
+ * bir stil kullanılabilir. Stile bağlı kalmak yerine dünyayı kaplayan yarı
+ * saydam koyu bir katman koyuyoruz — böylece her stil oyunun paletine uyuyor.
+ *
+ * Oyunun kendi katmanlarından ÖNCE eklenmeli: stilin üstünde, binaların ve
+ * sisin altında kalsın.
+ */
+export function addBasemapTint(map, { color = '#070b10', opacity = 0.45 } = {}) {
+  if (map.getLayer(TINT_LAYER)) return;
+
+  map.addSource(TINT_LAYER, {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Polygon', coordinates: [WORLD_RING] }
+    }
+  });
+
+  map.addLayer({
+    id: TINT_LAYER,
+    type: 'fill',
+    source: TINT_LAYER,
+    paint: { 'fill-color': color, 'fill-opacity': opacity }
+  });
+}
 
 /* ---------------------------------------------------------------- Gökyüzü */
 

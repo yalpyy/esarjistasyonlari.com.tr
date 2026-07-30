@@ -1,0 +1,27 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>sis yarış testi</title>
+<style>body{background:#0b0d0f;color:#e8eef4;font:13px ui-monospace,monospace;padding:1rem}</style></head>
+<body><pre id="o"></pre>
+<script type="module">
+import { fogFeature } from '/src/game/fog3d.js';
+import { cellsAround, FALLBACK_POSITION } from '/src/game/geo.js';
+const out=[];
+const ok=(c,n)=>out.push((c?'OK  ':'FAIL')+' '+n);
+
+// Hata senaryosu: harita yüklenirken hücreler boştu, sonra doldu.
+const bos = new Set();
+const dolu = new Set(cellsAround(FALLBACK_POSITION));
+
+const fogBos = fogFeature(bos);
+ok(fogBos.geometry.coordinates.length === 1, 'boş kümede sis TÜM dünyayı kapatıyor (delik yok) — eski hatanın görüntüsü');
+
+const fogDolu = fogFeature(dolu);
+ok(fogDolu.geometry.coordinates.length > 1, 'dolu kümede sis delik açıyor');
+
+// Ataşehir deliğin içinde mi?
+function inRing(ring,[x,y]){let i2=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const[xi,yi]=ring[i],[xj,yj]=ring[j];if((yi>y)!==(yj>y)&&x<((xj-xi)*(y-yi))/(yj-yi)+xi)i2=!i2;}return i2;}
+ok(inRing(fogDolu.geometry.coordinates[1], [FALLBACK_POSITION.lng, FALLBACK_POSITION.lat]),
+   'Ataşehir deliğin içinde — oyuncu sisin altında kalmıyor');
+ok(dolu.size === 7, 'demo 7 mahalle açıyor (merkez + 6 komşu)');
+document.getElementById('o').textContent = out.join('\n');
+window.__r = { pass: out.filter(x=>x.startsWith('OK')).length, fail: out.filter(x=>x.startsWith('FAIL')).length };
+</script></body></html>

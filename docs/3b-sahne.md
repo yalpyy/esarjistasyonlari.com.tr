@@ -187,3 +187,80 @@ bir kısmı eksik kalır. Dosya tekrar çalıştırılabilir; baştan sona bir k
 
 Ayrıntılı hata (kod, detay, ipucu) tarayıcı konsolunda `[Oyun] <fonksiyon>
 başarısız:` satırında duruyor.
+
+## Şema hatası: `cannot remove parameter defaults` / `function is not unique`
+
+`create or replace function` sanıldığından çok dar: yalnızca gövdeyi
+değiştirebilir. Argüman sayısı/tipi değişirse eski sürüm silinmez, yanına
+ikincisi eklenir; varsayılan parametre veya dönüş tipi değişirse doğrudan
+hata verir (42P13).
+
+Şema artık kendi fonksiyonlarını yeniden kurmadan önce **imzası ne olursa olsun**
+düşürüyor; bu blok dosyanın EN BAŞINDA. Elle `drop function` çalıştırman
+gerekmiyor.
+
+Hâlâ bu hatayı alıyorsan çalıştırdığın dosya güncel değildir — blok en başta
+olduğu için dosyanın tamamını kopyaladığından emin ol. Tamamını kopyalayamıyorsan
+`supabase/00-eski-fonksiyonlari-temizle.sql` dosyasını tek başına çalıştır,
+sonra `schema.sql`'i baştan çalıştır.
+
+## Şema hatası: `column "..." does not exist`
+
+Sebebi neredeyse her zaman aynı: aynı isimli bir tablo zaten var ama beklenen
+şekilde değil (yarım kalmış kurulum, elle değişiklik, başka amaçla açılmış
+tablo). `create table if not exists` mevcut tabloyu olduğu gibi bırakır,
+sonraki `create index` / `create policy` satırları da eksik sütunda patlar —
+ve hata hangi tablodan geldiğini söylemez.
+
+Şema artık bunu kendi onarıyor. Oyunun kendi tabloları (`discoveries`,
+`stations`, `claims`, `ocm_stations`) için:
+
+- şekil bozuk ve tablo **boşsa** → düşürülüp doğru şekliyle yeniden kurulur,
+- şekil bozuk ve tablo **doluysa** → veri silmemek için açık bir hata verir ve
+  ne yapman gerektiğini yazar.
+
+`public.profiles` bu listede yok: Supabase şablonundan gelen gerçek kullanıcı
+verisi taşıyabileceği için asla düşürülmez, eksik sütunları eklenir.
+
+Durumu görmek için `supabase/diagnose.sql` dosyasını çalıştır — tabloları,
+sütunları, fonksiyon imzalarını ve politikaları listeler, hiçbir şeyi değiştirmez.
+
+## Harita kapkara görünüyorsa
+
+İki ayrı sebebi olabilir, ikisi de giderildi:
+
+1. **Sis tüm dünyayı kapatıyordu.** `GameMap`'in `load` işleyicisi
+   `useEffect([styleUrl])` içinde olduğu için `cells` değerini ilk render'dan
+   yakalıyordu. Harita yüklenirken hücreler değişirse (demo modu, sunucudan
+   gelen liste) sis bayat/boş kümeyle kuruluyor ve hiç delik açmıyordu —
+   ekranın tamamı sis. Artık ref üzerinden güncel küme okunuyor.
+
+2. **Basemap hiç gelmiyor olabilir.** OpenFreeMap'in belgelediği stiller
+   `liberty`, `bright`, `positron`; koyu stil her zaman mevcut olmayabiliyor.
+   Stil 404 verirse basemap boş kalır. Artık `STYLE_CANDIDATES` sırayla
+   deneniyor ve hepsi başarısız olursa oyuncuya "Harita altlığı yüklenemedi"
+   bandı gösteriliyor — sessiz siyah ekran yok.
+
+Oyunun koyu görünümü artık stile bağlı değil: `addBasemapTint` dünyayı kaplayan
+yarı saydam koyu bir katman koyuyor, böylece açık temalı bir stil bile oyunun
+paletine uyuyor.
+
+## Konum alınamazsa: demo modu
+
+Tarayıcı konum vermezse (izin reddi, sinyal yok, desteklenmeyen cihaz) oyuncu
+boş ekranda kalmıyor; bir kart çıkıp **İstanbul, Ataşehir** üzerinden demo
+başlatmayı öneriyor. Koordinat `geo.js` içinde `FALLBACK_POSITION`.
+
+Demo modunda:
+
+- harita Ataşehir'de açılır, 3B dünya gezilebilir, sis merkez + 6 komşu hücrede açıktır,
+- **istasyon kurma, ele geçirme ve gelir toplama kapalıdır**,
+- konum sunucuya **hiç gönderilmez** (`record_discovery` çağrılmaz),
+- açılan hücreler yalnızca bellekte tutulur, kalıcı önbelleğe yazılmaz.
+
+Bu kısıtlar keyfi değil: sahte konum sunucuya kabul edilseydi, konum iznini
+reddeden herkes Ataşehir'den istasyon kurup gelir üretebilirdi ve `assert_fix`
+hız/mesafe kontrolünün tamamı anlamsızlaşırdı. Demo yalnızca vitrin.
+
+Banttaki "Konumu tekrar dene" düğmesi demodan çıkıp izni yeniden ister; demo
+sırasında açılan hücreler atılır ve sunucudaki gerçek liste esas alınır.
