@@ -82,6 +82,20 @@ export const exploredArea = (cells) => +(cellCount(cells) * RULES.CELL_AREA_KM2)
 export const TURKEY_AREA_KM2 = 783562;
 
 /**
+ * Konum alınamadığında haritanın açılacağı yer: İstanbul, Ataşehir.
+ *
+ * Bu konum yalnızca DEMO içindir ve sunucuya asla gönderilmez. Gönderilseydi
+ * konum iznini reddeden herkes buradan istasyon kurabilir, gelir toplayabilirdi
+ * — assert_fix'in tüm anlamı kalkardı. Demo modunda oyuncu haritayı gezer,
+ * ekonomiye dokunamaz.
+ */
+export const FALLBACK_POSITION = Object.freeze({
+  lat: 40.9923,
+  lng: 29.1244,
+  label: 'İstanbul, Ataşehir'
+});
+
+/**
  * Türkiye'nin yüzde kaçı açıldı.
  *
  * Bir res-8 hücre ~0,74 km², yani ülkenin tamamı ~1,06 milyon hücre. Oran

@@ -224,3 +224,23 @@ verisi taşıyabileceği için asla düşürülmez, eksik sütunları eklenir.
 
 Durumu görmek için `supabase/diagnose.sql` dosyasını çalıştır — tabloları,
 sütunları, fonksiyon imzalarını ve politikaları listeler, hiçbir şeyi değiştirmez.
+
+## Konum alınamazsa: demo modu
+
+Tarayıcı konum vermezse (izin reddi, sinyal yok, desteklenmeyen cihaz) oyuncu
+boş ekranda kalmıyor; bir kart çıkıp **İstanbul, Ataşehir** üzerinden demo
+başlatmayı öneriyor. Koordinat `geo.js` içinde `FALLBACK_POSITION`.
+
+Demo modunda:
+
+- harita Ataşehir'de açılır, 3B dünya gezilebilir, sis merkez + 6 komşu hücrede açıktır,
+- **istasyon kurma, ele geçirme ve gelir toplama kapalıdır**,
+- konum sunucuya **hiç gönderilmez** (`record_discovery` çağrılmaz),
+- açılan hücreler yalnızca bellekte tutulur, kalıcı önbelleğe yazılmaz.
+
+Bu kısıtlar keyfi değil: sahte konum sunucuya kabul edilseydi, konum iznini
+reddeden herkes Ataşehir'den istasyon kurup gelir üretebilirdi ve `assert_fix`
+hız/mesafe kontrolünün tamamı anlamsızlaşırdı. Demo yalnızca vitrin.
+
+Banttaki "Konumu tekrar dene" düğmesi demodan çıkıp izni yeniden ister; demo
+sırasında açılan hücreler atılır ve sunucudaki gerçek liste esas alınır.
