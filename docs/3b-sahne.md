@@ -227,7 +227,17 @@ sütunları, fonksiyon imzalarını ve politikaları listeler, hiçbir şeyi de�
 
 ## Harita kapkara görünüyorsa
 
-İki ayrı sebebi olabilir, ikisi de giderildi:
+Üç ayrı sebebi olabilir, üçü de giderildi:
+
+0. **Oyuncunun hiç açılmış hücresi yoktu.** En sık sebep buydu. Sis "dünya eksi
+   keşfedilen alan" olduğu için hücre listesi boşken TÜM ekranı kapatıyor;
+   geriye yalnızca oyuncu işareti (DOM elemanı, WebGL değil) kalıyor. Hücreler
+   eskiden ancak sunucu turu başarılı olunca açılıyordu, dolayısıyla üç durumda
+   ekran siyah kalıyordu: GPS doğruluğu 100 m'den kötüyse (telefonda kapalı
+   alanda çok olağan), RPC başarısızsa ve turun ilk saniyelerinde.
+   Artık konum gelir gelmez bulunduğun hücre **yerel olarak** açılıyor;
+   sunucuya kayıt (gerçek ilerleme) yine doğruluk ve hız kontrollerine tabi.
+   Görüntü ile ilerleme ayrıldı.
 
 1. **Sis tüm dünyayı kapatıyordu.** `GameMap`'in `load` işleyicisi
    `useEffect([styleUrl])` içinde olduğu için `cells` değerini ilk render'dan

@@ -92,8 +92,24 @@ export default function useGeoPlayer({ enabled = false, initialCells = [] } = {}
       setPosition(point);
       setError(null);
 
+      /**
+       * Bulunduğun yeri HEMEN aç — sunucuyu bekleme.
+       *
+       * Sis "dünya eksi keşfedilen alan" olduğu için hücre listesi boşken
+       * TÜM ekranı kapatıyor: oyuncu kapkara bir ekranda yalnızca kendi
+       * işaretini görüyor. Eskiden hücreler ancak sunucu turu başarılı olunca
+       * açılıyordu, dolayısıyla üç durumda ekran siyah kalıyordu: GPS doğruluğu
+       * zayıfsa (aşağıda return ediliyor), RPC başarısızsa ve turun ilk
+       * saniyelerinde.
+       *
+       * Görüntü ile ilerleme burada ayrılıyor: durduğun yer her hâlükârda
+       * görünür olur, ama SUNUCUYA kayıt (yani gerçek keşif ilerlemesi)
+       * aşağıdaki doğruluk ve hız kontrollerine tabi kalır.
+       */
+      mergeCells(cellsAround(point));
+
       if (point.accuracy > RULES.MAX_ACCURACY) {
-        setStatus('weak');   // konumu göster ama keşif sayma
+        setStatus('weak');   // konumu göster ama keşfi sunucuya yazma
         return;
       }
       if (!isPlausibleMove(prevRef.current, point)) {
@@ -139,7 +155,7 @@ export default function useGeoPlayer({ enabled = false, initialCells = [] } = {}
       document.removeEventListener('visibilitychange', onVisibility);
       stop();
     };
-  }, [enabled, demo, commit]);
+  }, [enabled, demo, commit, mergeCells]);
 
   /**
    * Demo moduna geç: haritayı Ataşehir'de aç.
