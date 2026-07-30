@@ -188,6 +188,17 @@ bir kısmı eksik kalır. Dosya tekrar çalıştırılabilir; baştan sona bir k
 Ayrıntılı hata (kod, detay, ipucu) tarayıcı konsolunda `[Oyun] <fonksiyon>
 başarısız:` satırında duruyor.
 
+## Şema hatası: `cannot remove parameter defaults` / `function is not unique`
+
+`create or replace function` sanıldığından çok dar: yalnızca gövdeyi
+değiştirebilir. Argüman sayısı/tipi değişirse eski sürüm silinmez, yanına
+ikincisi eklenir; varsayılan parametre veya dönüş tipi değişirse doğrudan
+hata verir (42P13).
+
+Şema artık kendi fonksiyonlarını yeniden kurmadan önce **imzası ne olursa olsun**
+düşürüyor. Böylece dosya, hangi eski sürüm kurulu olursa olsun çalıştırılabilir
+kalıyor. Elle `drop function` çalıştırman gerekmiyor.
+
 ## Şema hatası: `column "..." does not exist`
 
 Sebebi neredeyse her zaman aynı: aynı isimli bir tablo zaten var ama beklenen
