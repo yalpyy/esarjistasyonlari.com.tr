@@ -6,16 +6,64 @@ import { cellsAround } from './geo';
  * INSERT/UPDATE yapmaz — kurallar sunucuda (schema.sql / schema_v2.sql).
  */
 
-const fail = (reason) => ({ ok: false, reason });
+const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
+
+/**
+ * Sunucudan gelen hatayı Türkçe ve eyleme dönük anlatır.
+ *
+ * Her hatayı 'network' diye yuvarlamak kuruluşu teşhis edilemez hale
+ * getiriyordu: şema kurulmamış mı, PostgREST önbelleği bayat mı, oturum mu
+ * düşmüş, ayırt edilemiyordu. Kodlar PostgREST/Postgres'ten geliyor.
+ */
+export function rpcErrorText(error) {
+  if (!error) return 'Bilinmeyen hata.';
+  const code = error.code || '';
+  const msg = error.message || '';
+
+  // PGRST202: fonksiyon şema önbelleğinde yok.
+  if (code === 'PGRST202' || /Could not find the function/i.test(msg)) {
+    return 'Sunucu fonksiyonu bulunamadı. supabase/schema.sql çalıştırılmamış ' +
+           'ya da PostgREST şema önbelleği bayat olabilir. SQL Editor\'de ' +
+           "`notify pgrst, 'reload schema';` çalıştır.";
+  }
+  // PGRST301 / 401: oturum yok ya da süresi dolmuş.
+  if (code === 'PGRST301' || error.status === 401 || /JWT|token/i.test(msg)) {
+    return 'Oturumun geçersiz veya süresi dolmuş. Çıkış yapıp tekrar giriş yap.';
+  }
+  // 42501: yetki reddedildi (grant execute eksik).
+  if (code === '42501' || /permission denied/i.test(msg)) {
+    return 'Yetki reddedildi. Şemadaki `grant execute` bölümü uygulanmamış olabilir.';
+  }
+  // 42883: fonksiyon imzası uyuşmuyor (eski sürüm kalmış olabilir).
+  if (code === '42883' || /does not exist|is not unique/i.test(msg)) {
+    return 'Sunucu fonksiyonunun imzası uyuşmuyor. Şemanın son sürümünü ' +
+           'yeniden çalıştır (eski bir sürüm kalmış olabilir).';
+  }
+  if (/Failed to fetch|NetworkError/i.test(msg)) {
+    return 'Sunucuya ulaşılamadı. Bağlantını kontrol et.';
+  }
+  return msg || 'İşlem tamamlanamadı.';
+}
 
 async function rpc(name, args) {
   if (!supabase) return fail('not_configured');
+
   const { data, error } = await supabase.rpc(name, args);
+
   if (error) {
-    console.error(`[Oyun] ${name}:`, error.message);
-    return fail('network');
+    // Tam nesneyi konsola bas: kod, detay ve ipucu teşhis için gerekli.
+    console.error(`[Oyun] ${name} başarısız:`, error);
+    return fail(error.code || 'rpc_error', {
+      message: rpcErrorText(error),
+      raw: error.message
+    });
   }
-  return data ?? fail('empty');
+
+  if (data == null) return fail('empty', { message: 'Sunucu boş yanıt döndü.' });
+
+  // Sunucu kendi kural reddini {ok:false, reason:'...'} olarak döndürüyor;
+  // olduğu gibi geçir ki çağıran yer reason'a göre mesaj seçebilsin.
+  return data;
 }
 
 /* ---------- Oturum ---------- */
@@ -32,20 +80,101 @@ export function onAuthChange(handler) {
   return () => data.subscription.unsubscribe();
 }
 
+/**
+ * Giriş sonrası dönülecek adres.
+ *
+ * Varsayılan olarak sayfanın kendi kaynağı kullanılır; böylece Vercel önizleme
+ * dağıtımları da kendi adresine döner. VITE_SITE_URL tanımlıysa o kazanır —
+ * apex/www karışıklığında (esarjistasyonu.com.tr vs www.esarjistasyonu.com.tr)
+ * tek bir kanonik adrese sabitlemek için.
+ *
+ * DİKKAT: Supabase bu adresi yalnızca panelde izin listesindeyse kullanır.
+ * Listede yoksa sessizce yok sayıp Site URL'e düşer — varsayılanı
+ * http://localhost:3000 olduğu için giriş bağlantısı localhost'a gider.
+ * Ayar yeri: Authentication -> URL Configuration.
+ */
+export function authRedirectUrl() {
+  const base = (import.meta.env.VITE_SITE_URL || '').trim().replace(/\/+$/, '');
+  return `${base || window.location.origin}/oyun`;
+}
+
+/**
+ * E-posta ile giriş başlatır.
+ *
+ * Gönderilen e-posta hem bağlantı hem 6 haneli kod içerebilir (şablona bağlı).
+ * Kod yolu tercih edilir çünkü bağlantı kırılgan: kurumsal e-posta tarayıcıları
+ * (Outlook Safe Links vb.) tek kullanımlık jetonu kullanıcı tıklamadan tüketiyor
+ * ve bağlantı `access_denied / otp_expired` veriyor. Kod yolunda yönlendirme
+ * adresi hiç devreye girmiyor.
+ */
 export async function signInWithEmail(email) {
   if (!supabase) return fail('not_configured');
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${window.location.origin}/oyun` }
+    options: { emailRedirectTo: authRedirectUrl() }
   });
   return error ? fail(error.message) : { ok: true };
+}
+
+/** E-postadaki 6 haneli kodu doğrular ve oturumu açar. */
+export async function verifyEmailCode(email, code) {
+  if (!supabase) return fail('not_configured');
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: String(code).trim(),
+    type: 'email'
+  });
+  if (error) return fail(error.message);
+  return { ok: true, session: data.session };
+}
+
+/**
+ * Supabase'in adres satırına bıraktığı giriş hatasını okur.
+ *
+ * Bağlantı başarısız olduğunda hata sayfada değil, URL parçasında (#) geliyor:
+ *   #error=access_denied&error_code=otp_expired&error_description=...
+ * Okunmazsa kullanıcı sadece giriş ekranını yeniden görür ve neden
+ * giremediğini asla anlayamaz. Okuduktan sonra adres temizleniyor ki
+ * yenilemede hata tekrar görünmesin.
+ */
+export function readAuthError() {
+  if (typeof window === 'undefined') return null;
+
+  const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const fromQuery = new URLSearchParams(window.location.search);
+  const src = fromHash.get('error') || fromHash.get('error_code') ? fromHash : fromQuery;
+
+  const error = src.get('error');
+  const code = src.get('error_code');
+  if (!error && !code) return null;
+
+  const description = (src.get('error_description') || '').replace(/\+/g, ' ');
+
+  window.history.replaceState({}, '', window.location.pathname);
+
+  return { error, code, description };
+}
+
+/** Giriş hatasını Türkçe ve eyleme dönük anlatır. */
+export function authErrorText({ code, error, description } = {}) {
+  switch (code) {
+    case 'otp_expired':
+      return 'Giriş bağlantısının süresi dolmuş veya bağlantı zaten kullanılmış. ' +
+             'Kurumsal e-posta filtreleri bağlantıyı sen tıklamadan açıp tüketebiliyor — ' +
+             'bunun yerine e-postadaki 6 haneli kodu kullan.';
+    case 'access_denied':
+      return 'Giriş reddedildi. Bağlantı geçersiz ya da kullanılmış; ' +
+             'yeni bir kod iste ve e-postadaki 6 haneli kodu gir.';
+    default:
+      return description || error || 'Giriş tamamlanamadı.';
+  }
 }
 
 export async function signInWithGoogle() {
   if (!supabase) return fail('not_configured');
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}/oyun` }
+    options: { redirectTo: authRedirectUrl() }
   });
   return error ? fail(error.message) : { ok: true };
 }
