@@ -196,8 +196,13 @@ ikincisi eklenir; varsayılan parametre veya dönüş tipi değişirse doğrudan
 hata verir (42P13).
 
 Şema artık kendi fonksiyonlarını yeniden kurmadan önce **imzası ne olursa olsun**
-düşürüyor. Böylece dosya, hangi eski sürüm kurulu olursa olsun çalıştırılabilir
-kalıyor. Elle `drop function` çalıştırman gerekmiyor.
+düşürüyor; bu blok dosyanın EN BAŞINDA. Elle `drop function` çalıştırman
+gerekmiyor.
+
+Hâlâ bu hatayı alıyorsan çalıştırdığın dosya güncel değildir — blok en başta
+olduğu için dosyanın tamamını kopyaladığından emin ol. Tamamını kopyalayamıyorsan
+`supabase/00-eski-fonksiyonlari-temizle.sql` dosyasını tek başına çalıştır,
+sonra `schema.sql`'i baştan çalıştır.
 
 ## Şema hatası: `column "..." does not exist`
 
@@ -217,5 +222,5 @@ ve hata hangi tablodan geldiğini söylemez.
 `public.profiles` bu listede yok: Supabase şablonundan gelen gerçek kullanıcı
 verisi taşıyabileceği için asla düşürülmez, eksik sütunları eklenir.
 
-Durumu görmek için `supabase/tanı.sql` dosyasını çalıştır — tabloları,
+Durumu görmek için `supabase/diagnose.sql` dosyasını çalıştır — tabloları,
 sütunları, fonksiyon imzalarını ve politikaları listeler, hiçbir şeyi değiştirmez.
