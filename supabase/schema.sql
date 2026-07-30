@@ -67,6 +67,73 @@ $$;
 -- 3. Tablolar
 -- =============================================================================
 
+/**
+ * Bozuk/yarım tabloları önce onar.
+ *
+ * `create table if not exists` mevcut tabloyu OLDUĞU GİBİ bırakır. Tablo
+ * beklenenden farklı bir şekle sahipse (yarım kalmış kurulum, elle yapılmış
+ * değişiklik, başka bir amaçla açılmış aynı isimli tablo) sonraki CREATE INDEX
+ * ve CREATE POLICY satırları `column "..." does not exist` ile patlar — ve hata
+ * hangi tablodan geldiğini söylemez.
+ *
+ * Bu blok oyunun KENDİ tablolarını denetler. Şekil bozuksa:
+ *   - tablo boşsa: sessizce düşürülür, aşağıda doğru şekliyle yeniden kurulur.
+ *   - tablo doluysa: veri kaybetmemek için açık bir hata verir ve ne yapılacağını
+ *     söyler. Sessizce veri silmek yok.
+ *
+ * public.profiles bu listede YOK: Supabase şablonundan gelen gerçek kullanıcı
+ * verisi taşıyabilir, o yüzden asla düşürülmüyor; eksik sütunları aşağıda
+ * `alter table ... add column if not exists` ile tamamlanıyor.
+ */
+do $$
+declare
+  t       record;
+  missing text;
+  cnt     bigint;
+begin
+  for t in
+    select * from (values
+      ('discoveries',  array['user_id', 'cell', 'lat', 'lng', 'created_at']),
+      ('stations',     array['id', 'owner', 'kind', 'power', 'lat', 'lng',
+                             'created_at', 'last_collected_at']),
+      ('claims',       array['ocm_id', 'owner', 'lat', 'lng', 'claimed_at',
+                             'expires_at', 'collected_at']),
+      ('ocm_stations', array['ocm_id', 'title', 'lat', 'lng', 'power', 'updated_at'])
+    ) as x(tbl, cols)
+  loop
+    if to_regclass('public.' || t.tbl) is null then
+      continue;   -- yok; aşağıda sıfırdan kurulacak
+    end if;
+
+    select string_agg(c, ', ')
+      into missing
+      from unnest(t.cols) c
+     where not exists (
+       select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = t.tbl and column_name = c
+     );
+
+    if missing is null then
+      continue;   -- şekli doğru
+    end if;
+
+    execute format('select count(*) from public.%I', t.tbl) into cnt;
+
+    if cnt = 0 then
+      raise notice 'public.% beklenen sütunları taşımıyor (eksik: %). Tablo boş, yeniden oluşturuluyor.',
+        t.tbl, missing;
+      execute format('drop table public.%I cascade', t.tbl);
+    else
+      -- RAISE yalnızca % yer tutucusunu bilir; format()'taki %I burada geçersiz.
+      raise exception
+        'public.% tablosu beklenen sütunları taşımıyor (eksik: %) ve % satır veri içeriyor. '
+        'Veriyi yedekleyip tabloyu elle kaldır (drop table public.% cascade), sonra bu dosyayı tekrar çalıştır.',
+        t.tbl, missing, cnt, t.tbl;
+    end if;
+  end loop;
+end;
+$$;
+
 create table if not exists public.profiles (
   id                  uuid primary key references auth.users(id) on delete cascade,
   nickname            text,

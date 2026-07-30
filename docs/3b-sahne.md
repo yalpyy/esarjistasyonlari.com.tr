@@ -187,3 +187,24 @@ bir kısmı eksik kalır. Dosya tekrar çalıştırılabilir; baştan sona bir k
 
 Ayrıntılı hata (kod, detay, ipucu) tarayıcı konsolunda `[Oyun] <fonksiyon>
 başarısız:` satırında duruyor.
+
+## Şema hatası: `column "..." does not exist`
+
+Sebebi neredeyse her zaman aynı: aynı isimli bir tablo zaten var ama beklenen
+şekilde değil (yarım kalmış kurulum, elle değişiklik, başka amaçla açılmış
+tablo). `create table if not exists` mevcut tabloyu olduğu gibi bırakır,
+sonraki `create index` / `create policy` satırları da eksik sütunda patlar —
+ve hata hangi tablodan geldiğini söylemez.
+
+Şema artık bunu kendi onarıyor. Oyunun kendi tabloları (`discoveries`,
+`stations`, `claims`, `ocm_stations`) için:
+
+- şekil bozuk ve tablo **boşsa** → düşürülüp doğru şekliyle yeniden kurulur,
+- şekil bozuk ve tablo **doluysa** → veri silmemek için açık bir hata verir ve
+  ne yapman gerektiğini yazar.
+
+`public.profiles` bu listede yok: Supabase şablonundan gelen gerçek kullanıcı
+verisi taşıyabileceği için asla düşürülmez, eksik sütunları eklenir.
+
+Durumu görmek için `supabase/tanı.sql` dosyasını çalıştır — tabloları,
+sütunları, fonksiyon imzalarını ve politikaları listeler, hiçbir şeyi değiştirmez.
