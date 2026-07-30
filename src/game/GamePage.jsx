@@ -10,6 +10,13 @@ import './game3d.css';
 
 const COST = { AC: 1000, DC: 5000 };
 
+/** Sunucunun kural redleri. Bunların dışındakiler altyapı hatasıdır. */
+const KNOWN_REASONS = new Set([
+  'unexplored', 'too_far', 'too_close', 'quota', 'funds',
+  'implausible', 'consent', 'cooldown', 'banned',
+  'weak_signal', 'unknown_station', 'bad_kind'
+]);
+
 export default function GamePage() {
   return <ConsentGate>{(ctx) => <Game {...ctx} />}</ConsentGate>;
 }
@@ -92,7 +99,7 @@ function Game({ profile, refreshProfile }) {
       setBuildMode(null);
       await Promise.all([refreshProfile(), refreshViewport()]);
     } else {
-      say(reasonText(res?.reason), 'warn');
+      say(reasonText(res?.reason, res), 'warn');
     }
   };
 
@@ -128,7 +135,7 @@ function Game({ profile, refreshProfile }) {
         : `₺${res.earned} toplandı.`, res.over_capacity ? 'warn' : 'good');
       refreshProfile();
     } else {
-      say('Gelir toplanamadı.', 'warn');
+      say(reasonText(res?.reason, res), 'warn');
     }
   };
 
@@ -214,6 +221,10 @@ function Game({ profile, refreshProfile }) {
 }
 
 function reasonText(reason, extra) {
+  // Sunucu/altyapı hatalarının kendi açıklaması var; kural redlerinde ise
+  // aşağıdaki metinler kullanılıyor.
+  if (extra?.message && !KNOWN_REASONS.has(reason)) return extra.message;
+
   switch (reason) {
     case 'unexplored': return 'Burası henüz keşfedilmedi.';
     case 'too_far': return extra?.distance

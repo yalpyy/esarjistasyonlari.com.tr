@@ -281,6 +281,21 @@ grant select on public.profiles, public.discoveries to authenticated;
 grant update (nickname) on public.profiles to authenticated;
 
 -- =============================================================================
+-- 4b. Eski fonksiyon sürümlerini temizle
+--
+-- `create or replace function` yalnızca AYNI imzayı değiştirir. İmza
+-- değiştiğinde eski sürüm veritabanında kalır ve PostgREST iki aday arasında
+-- kalıp çağrıyı reddedebilir ("function is not unique") ya da istemcinin artık
+-- göndermediği eski imzayı seçebilir.
+--
+-- build_station 4 argümandan 6'ya çıktı (oyuncu konumu ayrı parametre oldu),
+-- bu yüzden eski sürümün açıkça düşürülmesi gerekiyor.
+-- =============================================================================
+
+drop function if exists public.build_station(double precision, double precision, text, int);
+drop function if exists public.record_discovery(double precision, double precision, int);
+
+-- =============================================================================
 -- 5. Kayıt olunca profil aç
 -- =============================================================================
 
@@ -852,3 +867,14 @@ begin
   end if;
 end;
 $$;
+
+-- =============================================================================
+-- 16. PostgREST şema önbelleğini tazele
+--
+-- PostgREST fonksiyon imzalarını bellekte tutar. Şema çalıştırıldıktan sonra
+-- önbellek tazelenmezse istemci "Could not find the function ... in the schema
+-- cache" (PGRST202) alır — fonksiyon veritabanında olmasına rağmen. Bu satır
+-- olmadan kurulum sonrası ilk denemeler sebepsizce başarısız görünüyor.
+-- =============================================================================
+
+notify pgrst, 'reload schema';

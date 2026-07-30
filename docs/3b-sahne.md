@@ -170,3 +170,20 @@ Authentication → Emails → **Magic Link** şablonuna `{{ .Token }}` ekle:
 Bağlantı başarısız olduğunda Supabase hatayı sayfada değil adres parçasında
 (`#error=...`) döndürür. Giriş ekranı bunu okuyup Türkçe açıklıyor ve adresi
 temizliyor; okunmasaydı kullanıcı yalnızca giriş ekranını yeniden görürdü.
+
+## "Rıza kaydedilemedi" ve benzeri RPC hataları
+
+Artık gerçek sebep ekranda yazıyor. Sık görülenler:
+
+| Ekrandaki mesaj | Sebep | Çözüm |
+|---|---|---|
+| Sunucu fonksiyonu bulunamadı (PGRST202) | Şema çalıştırılmamış ya da PostgREST önbelleği bayat | `supabase/schema.sql`'i çalıştır; sonu zaten `notify pgrst, 'reload schema';` ile bitiyor |
+| Yetki reddedildi (42501) | `grant execute` bölümü uygulanmamış | Şemayı baştan çalıştır |
+| İmza uyuşmuyor (42883) | Eski fonksiyon sürümü kalmış | Şemayı çalıştır; eski imzalar açıkça düşürülüyor |
+| Oturumun düşmüş | JWT yok ya da süresi dolmuş | Çıkış yapıp tekrar gir |
+
+Şemayı **kısmen** çalıştırdıysan (bir hatada durup kalanı atladıysan) fonksiyonların
+bir kısmı eksik kalır. Dosya tekrar çalıştırılabilir; baştan sona bir kez daha çalıştır.
+
+Ayrıntılı hata (kod, detay, ipucu) tarayıcı konsolunda `[Oyun] <fonksiyon>
+başarısız:` satırında duruyor.

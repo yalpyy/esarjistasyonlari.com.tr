@@ -189,8 +189,17 @@ export default function ConsentGate({ children }) {
           onClick={async () => {
             setBusy(true);
             const r = await setConsent(true);
-            if (r?.ok) setProfile(await getProfile());
-            else setErr('Rıza kaydedilemedi, tekrar dene.');
+            if (r?.ok) {
+              setProfile(await getProfile());
+            } else {
+              // Gerçek sebebi göster: "tekrar dene" demek, şema kurulmamış mı
+              // yoksa oturum mu düşmüş ayırt edilemez hale getiriyordu.
+              setErr(
+                r?.reason === 'unauthenticated'
+                  ? 'Oturumun düşmüş görünüyor. Sayfayı yenileyip tekrar giriş yap.'
+                  : `Rıza kaydedilemedi: ${r?.message || r?.reason || 'bilinmeyen hata'}`
+              );
+            }
             setBusy(false);
           }}
         >
