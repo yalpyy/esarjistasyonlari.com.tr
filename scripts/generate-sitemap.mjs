@@ -75,7 +75,11 @@ async function fetchAllStations() {
       verbose: 'false',
     });
 
-    if (OCM_KEY) params.set('key', OCM_KEY);
+    const headers = { Accept: 'application/json' };
+    if (OCM_KEY) {
+      params.set('key', OCM_KEY);
+      headers['X-API-Key'] = OCM_KEY;
+    }
 
     // OCM doesn't have a clean offset param, but we can use it with some tricks.
     // For simplicity, do a single large request first. If we get PAGE_SIZE results,
@@ -84,7 +88,7 @@ async function fetchAllStations() {
       const url = `${OCM_API}?${params}`;
       console.log(`Fetching stations (offset=${offset})...`);
 
-      const response = await fetch(url);
+      const response = await fetch(url, { headers });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }

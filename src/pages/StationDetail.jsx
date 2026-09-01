@@ -23,9 +23,13 @@ export default function StationDetail() {
       chargepointid: id,
       verbose: 'true',
     });
-    if (key) params.set('key', key);
+    const headers = { Accept: 'application/json' };
+    if (key) {
+      params.set('key', key);
+      headers['X-API-Key'] = key;
+    }
 
-    fetch(`${OCM_API}?${params}`)
+    fetch(`${OCM_API}?${params}`, { headers })
       .then((r) => {
         if (!r.ok) throw new Error(r.status);
         return r.json();

@@ -15,12 +15,15 @@ export async function fetchStations({ maxResults = 500 } = {}) {
     verbose: 'false',
   });
 
+  const headers = { Accept: 'application/json' };
   if (OCM_KEY) {
+    headers['X-API-Key'] = OCM_KEY;
+    // Also send as query param for maximum compatibility
     params.set('key', OCM_KEY);
   }
 
   try {
-    const response = await fetch(`${OCM_API}?${params}`);
+    const response = await fetch(`${OCM_API}?${params}`, { headers });
     if (!response.ok) {
       const errorData = await response.text();
       console.error('API Error Response:', errorData);
